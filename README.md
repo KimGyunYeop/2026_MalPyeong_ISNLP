@@ -7,17 +7,17 @@
 
 ## 기술서 기준 설정
 
-| 항목 | 채점 | 근거 |
-|---|---|---|
-| 레시피 | [report_abcd.json](main_code/configs/report_abcd.json) | [r18_report_qwen35.json](main_code_relonation/recipes/r18_report_qwen35.json) |
-| 백본 | Qwen3.5-9B, BF16 | 같은 백본 공유 |
-| LoRA | r32 / alpha64 / dropout0.05, attention+MLP | r32 / alpha64 / dropout0.05, q/k/v/o |
-| 학습량 | 11,600편, 1,104 step | 11,600편, 2 epoch |
-| 배치 × 누적 | 32 × 1 | 2 × 16 |
-| 학습률 | LoRA 4e-5, 출력층 2e-4 | 4e-5 |
-| 최대 입력 길이 | 4,096 | 8,192 |
-| warmup 비율 | 0.05 | 0.05 |
-| 시드 | 42~49 | 42 |
+| 항목           | 채점                                                  | 근거                                                                         |
+| -------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 레시피         | [report_abcd.json](main_code/configs/report_abcd.json) | [r18_report_qwen35.json](main_code_relonation/recipes/r18_report_qwen35.json) |
+| 백본           | Qwen3.5-9B, BF16                                      | 같은 백본 공유                                                               |
+| LoRA           | r32 / alpha64 / dropout0.05, attention+MLP            | r32 / alpha64 / dropout0.05, q/k/v/o                                         |
+| 학습량         | 11,600편, 1,104 step                                  | 11,600편, 2 epoch                                                            |
+| 배치 × 누적   | 32 × 1                                               | 2 × 16                                                                      |
+| 학습률         | LoRA 4e-5, 출력층 2e-4                                | 4e-5                                                                         |
+| 최대 입력 길이 | 4,096                                                 | 8,192                                                                        |
+| warmup 비율    | 0.05                                                  | 0.05                                                                         |
+| 시드           | 42~49                                                 | 42                                                                           |
 
 - A: 5등급 분포 기댓값, MSE + CE.
 - B: 영역별 Soft-Spearman, 가중치 0.2, 온도 0.5.
@@ -87,24 +87,3 @@ bash docker_release.sh check
 완료된 학습 산출물이 없으면 중단한다. 실제 빌드·평가·배포는 별도 작업이다.
 생성된 매니페스트는 `main_code_submission/results/report_manifests/`에 저장하며,
 가중치·실험 결과와 함께 Git에서 제외한다.
-
-## 현재 확인 상태
-
-이번 설정 정리에서는 학습·평가 코드와 실행 스크립트를 변경하지 않고,
-JSON 구문·설정 로더 호환성·매니페스트 경로를 확인했다. 이 정리 과정에서는
-학습과 평가는 실행하지 않았다.
-
-기술서와 구현 사이에는 다음 차이가 남아 있다.
-
-- 세부 준거 MSE는 9개 준거 단순 평균 대신 영역 안에서 평균한 뒤 세 영역을 균등 평균한다.
-- 평가자 CE는 `ln(5)`로 정규화한다.
-- 근거 생성은 greedy 실패 시 sampling 재시도가 있다.
-- 현재 설정의 Trainer 계산은 채점 warmup 56, 근거 726 step / warmup 37이다.
-  기술서의 표기는 각각 55, 725 / 36이며, 비율 0.05·2 epoch를 유지한 채
-  이 숫자까지 고정하려면 코드 변경이 필요하다.
-- AWQ teacher의 정확한 revision과 prompt_8 원문은 아직 연결되지 않았다.
-
-show_submission_settings.py의 과거 상수는 현재 설정의 기준으로 사용하지 않는다.
-
-로컬 검토 자료·정리 문서·보조 실행 도구·학습 산출물은 Git에서 제외한다.
-새로 추가할 파일은 기존 배포 스크립트가 사용하는 위의 채점·근거 recipe JSON 2개다.

@@ -56,7 +56,7 @@ optimizer*.bin
 /backup/
 /backups/
 # 로컬 검토 기록: 코드 사본, 로그, PDF 추출 이미지, 검증 JSON과 백업.
-/audit_*/
+/audit*/
 # 로컬 정리 문서와 보조 도구. 공개 실행 경로는 기존 train.py/docker_release.sh를 사용한다.
 /reproduction/
 /reproduce_report.sh
