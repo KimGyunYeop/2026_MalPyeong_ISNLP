@@ -1,0 +1,198 @@
+# =====================================================================
+# 2026 국립국어원 AI 말평 — 글쓰기 채점 능력 평가
+# 최종 제출본 재현에 필요한 것만 올린다.
+#
+# 원칙
+#   1. 대회 데이터는 절대 올리지 않는다 (배포 금지 자료).
+#   2. 모델 가중치·체크포인트·이미지 staging은 올리지 않는다 (수백 GB).
+#   3. 실험 산출물(results/)은 올리지 않는다. 요약 문서만 예외로 남긴다.
+#   4. 최종 제출본에 쓰이지 않은 실험 트리는 올리지 않는다.
+# =====================================================================
+
+# ---- 파이썬/도구 부산물 ------------------------------------------------
+__pycache__/
+*.py[cod]
+.venv*/
+.cache/
+.ruff_cache/
+.pytest_cache/
+.snapshots/
+*.tmp
+*.tmp.*
+*.log
+*.out
+
+# ---- 대회 데이터 (배포 금지) -------------------------------------------
+datasets/
+**/processed_dataset/
+**/prepared_extended_data*/
+*.jsonl
+!code_for_docker_check_otherserv/data/README.md
+download_logs/
+
+# ---- 모델 가중치와 체크포인트 -----------------------------------------
+**/*checkpoint*/
+**/checkpoints/
+**/trainer_checkpoints/
+**/final_adapter/
+**/adapter/*
+!**/adapter/.gitkeep
+!**/adapter/README.md
+**/model/*
+!**/model/README.md
+*.safetensors
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.gguf
+pytorch_model*.bin
+adapter_model*.bin
+model-*.bin
+optimizer*.bin
+
+# ---- 빌드 staging / 백업 / 임시 ---------------------------------------
+/submission_assets/
+/backup/
+/backups/
+/tmp_trashcan*/
+/tmp_trash_can*/
+*trash*
+
+# ---- 실험 산출물 -------------------------------------------------------
+# results/ 아래는 전부 제외하고, 방법론 요약 문서만 되살린다.
+main_code/results/**
+!main_code/results/all_results.md
+!main_code/results/remeasured.md
+!main_code/results/new_proposed/
+main_code/results/new_proposed/**
+!main_code/results/new_proposed/results.md
+main_code_relonation/results/
+main_code_submission/results/
+code_for_docker_check_otherserv/results/
+
+# ---- 최종 제출본에 쓰이지 않은 실험 트리 -------------------------------
+# 3단계(분석 생성 -> 채점) 실험. 근거 무기여가 공식 400편에서 확인되어 제출본에
+# 들어가지 않았다. README의 "채택하지 않은 축"에 결론만 남긴다.
+/main_code_analysis_3stage_opt/
+/main_code_analysis_3stage_opt_offline_custom/
+/main_code_for_submssion_3stage/
+/main_proposed_regression_base/
+# 타 팀 이미지 감사. 채점에 쓸 것이 없다는 결론만 남기고 산출물은 올리지 않는다.
+/competitor_docker_audit/
+
+# ---- 자격증명 ----------------------------------------------------------
+.env
+.env.*
+!.env.example
+.netrc
+.npmrc
+*.pem
+*.key
+*.p12
+*.pfx
+credentials*.json
+
+# ---- 내부 작업 파일 / 폐기된 스크립트 ----------------------------------
+# release 스크립트는 docker_release.sh 하나만 정본이다. v3~v9는 그 과정의 사본이다.
+docker_release_v*.sh
+release_y6.sh
+analysis_3stage_implementation_prompt.sh
+backup_project.sh
+codebase_reading_prompt.sh
+codebase_reading.sh
+github_upload.sh
+workflow.sh
+queue_quantized_after_mixed.sh
+/AGENT_OPERATING_RULES.md
+/공지모음.txt
+/push.log
+/tmp.txt
+*.zip
+*.pdf
+/2023년 국민의 글쓰기 능력 진단 체계 개발/
+
+# ---- 일회성 실험 큐 스크립트 (제출본 재현에 불필요) --------------------
+# 주의: quantization_objectives.py는 여기 있었으나 models.py가 무조건 import하는
+# 재현 경로 모듈이다(2026-09-29 발견). 빼면 새 클론에서 main_code.models 임포트가
+# 실패해 학습·추론·테스트가 전부 죽는다. 절대 다시 넣지 않는다.
+main_code/run_checkpoint_soup_sweep.sh
+main_code/run_competitor_adoption_gpu_pair.sh
+main_code/run_mixed_metric_gpu_pair.sh
+main_code/run_quantized_metric_gpu_pair.sh
+main_code/competitor_adoption_contract.py
+main_code/tests/test_competitor_adoption_contract.py
+main_code/tests/test_competitor_composite.py
+main_code/tests/test_mixed_metric_runner.py
+main_code/MIXED_METRIC_EXPERIMENT_PLAN_20260813.md
+main_code/QUANTIZATION_AWARE_EXPERIMENT_PLAN_20260813.md
+main_code/POST_BUILD_EXPERIMENTS.md
+main_code/SCORING_BACKLOG_20260820.md
+queue_single_gpu_after_mixed.sh
+
+# ---- 최종 제출본에 의해 무효가 된 문서/스크립트 ------------------------
+# CURRENT_RELEASE_STATUS.md는 2026-08-12 시점의 "현재 상태" 문서라 두 번 갱신된
+# 지금은 c02를 확정본으로 잘못 알려준다. 현재 상태는 루트 README.md가 기준이다.
+main_code_submission/CURRENT_RELEASE_STATUS.md
+# Y6는 폐기된 제출 계보다. 업로드본 재검증은 check_uploaded_final.sh를 쓴다.
+code_for_docker_check_otherserv/check_uploaded_y6.sh
+
+# ===========================================================================
+# 2026-09-29 GitHub 공개 정리
+# 기준: "인자 없이 학습·추론·빌드·검증을 재현하는 데 필요한가."
+# 아래는 전부 실험 분석·집계·의사결정 도구이거나 폐기된 계보다.
+# 파일은 작업 트리에 남고 추적만 하지 않는다.
+# ===========================================================================
+
+# --- 실험 기록 문서 (타 팀 리더보드 점수 포함) ---
+main_code/DISTRIBUTION_SHIFT_DIAGNOSIS_20260820.md
+main_code/EXPERIMENT_RULES_AND_ADOPTION_20260821.md
+main_code/SCORE_MODEL_RESULTS_AND_FINAL_PLAN_20260810.md
+main_code/OPTION_CATALOG.md
+main_code/results/*.md
+main_code/results/**/*.md
+main_code/results/*.csv
+main_code/results/**/*.csv
+main_code_submission/STARTUP_FAILURE_REVIEW_20260811.md
+main_code_relonation/RATIONALE_PROMPT_V1_METHOD.md
+code_for_docker_check_otherserv/OFFICIAL_CONTRACT_AUDIT_20260811.md
+
+# --- 폐기된 Y6 계보 문서 (코드와 테스트는 올린다) ---
+main_code_submission/Y6_PREDICTION_PARITY_CONTRACT.md
+
+
+# --- 실험 스테이지 러너와 그 테스트 ---
+main_code/run_method.sh
+main_code/_run_experiment.sh
+main_code/tests/test_run_status.py
+main_code/tests/test_post_submission_final10_runner.py
+main_code/tests/test_post_submission_rerun4_runner.py
+main_code/tests/test_y1_aihub_data_expend_runner.py
+main_code/tests/test_y6_final_combo_runner.py
+main_code_relonation/run_rationale_teacher_ab.sh
+main_code_relonation/run_rationale_full11600_r32.sh
+code_for_docker_check_otherserv/test_release_flow.sh
+
+# --- 폐기/백업 preset. 최종은 configs/confirmed_final.json 하나다. ---
+main_code/configs/confirmed_c02_ax4.json
+main_code/configs/confirmed_ab_only_20260825.json
+
+# 재실험 작업 문서와 결과. 제출물과 무관한 내부 분석이다.
+main_code/QWEN_REEXPERIMENT_*.md
+main_code/results/qwen_result_analysis/
+
+# 재실험 큐 스크립트 (제출물 재현과 무관)
+main_code/run_qwen_reexperiment.sh
+main_code/run_qwen_combo.sh
+main_code/chain_after_aesrl.sh
+
+# --- 방법·계약 서술 문서. 코드와 README만으로 재현되므로 올리지 않는다. ---
+main_code/METHOD_AND_METRIC_CONTRACT.md
+main_code/OPTIONS_REFERENCE.md
+main_code_submission/NEVER_DISCARD_A_SCORE.md
+main_code_submission/SUBMISSION_FORM_AND_EVAL_GUIDE_20260810.md
+
+# 제외된 .sh 래퍼나 Y6 산출물을 읽는 테스트. 새 클론에서 실패하므로 함께 뺀다.
+main_code/tests/test_quantized_queue_contract.py
+main_code/tests/test_single_gpu_migration_contract.py
+main_code_submission/tests/test_y6_prediction_parity.py

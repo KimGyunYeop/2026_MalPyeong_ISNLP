@@ -1,0 +1,6 @@
+numpy>=1.26
+tqdm>=4.66
+# Motif remote model code가 Differential Attention kernel을 불러올 때 필요합니다.
+kernels
+# Qwen3.5는 현재 안정 릴리스보다 vLLM nightly가 필요할 수 있습니다.
+# 설치 환경의 CUDA/PyTorch 조합에 맞춰 vLLM을 별도로 설치하세요.

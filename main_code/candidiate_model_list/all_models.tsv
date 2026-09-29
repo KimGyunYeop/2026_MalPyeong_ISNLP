@@ -1,0 +1,145 @@
+# 두 첨부 모델 카탈로그를 실제 Hugging Face 공식/원저자 checkpoint ID로 정규화한 목록이다.
+# 같은 checkpoint의 중복 언급은 한 번만 기록하며, parameters_b는 다운로드 순서 결정용 명목/공개 파라미터 수다.
+# Kanana 1.5 32B는 2026-07-26 현재 kakaocorp 공식 Hugging Face checkpoint가 없어 제외했다.
+# 구 T5Gemma는 회귀 backbone 목적에 맞춰 instruction/prefixlm 중복 없이 비-IT UL2 크기 변형만 포함하고, T5Gemma 2는 공식 pretrained 4B-4B를 별도 포함한다.
+# enabled는 2026-07-26 모델카드/공식 벤치마크, 현재 말평 실험 결과, 한국어 적합성, 군집 내 중복성, L40S 48GB 비용을 바탕으로 선별했다.
+# 사용자가 지정한 Core 및 다양성 예비 목록은 위 선별 결과와 관계없이 enabled=1로 강제 유지한다.
+# 0인 행도 후보 이력과 수동 재활성화를 위해 삭제하지 않는다. 기본 다운로드는 enabled=1만 대상으로 한다.
+# enabled	slug	repo_id	revision	parameters_b	source_run	parse_rate	overall_rmse	overall_spearman	valid_only_rmse	valid_only_spearman	source_quantization	download_excludes	note
+0	deberta_v3_xsmall_korean	team-lucid/deberta-v3-xsmall-korean	main	0.0463	encoder	-	-	-	-	-	unquantized	-	한국어 DeBERTa-v3 xsmall
+1	mdeberta_v3_base	microsoft/mdeberta-v3-base	main	0.2760	encoder	-	-	-	-	-	unquantized	pytorch_model.generator.bin	86M backbone + 약 190M vocabulary embedding 기준; ELECTRA generator weight 제외
+0	deberta_v3_small_korean	team-lucid/deberta-v3-small-korean	main	0.0927	encoder	-	-	-	-	-	unquantized	-	한국어 DeBERTa-v3 small
+1	kr_bert_char16424	snunlp/KR-BERT-char16424	main	0.1000	encoder	-	-	-	-	-	unquantized	-	서울대 KR-BERT
+1	kcelectra_base	beomi/KcELECTRA-base	main	0.1091	encoder	-	-	-	-	-	unquantized	pytorch_model.bin	safetensors와 중복인 PyTorch bin 제외
+0	kcbert_base	beomi/kcbert-base	main	0.1095	encoder	-	-	-	-	-	unquantized	-	첨부 하단 KcBERT
+1	koelectra_base_v3	monologg/koelectra-base-v3-discriminator	main	0.1100	encoder	-	-	-	-	-	unquantized	-	첨부의 koelectra-base-v3를 discriminator checkpoint로 해석
+0	kr_electra_discriminator	snunlp/KR-ELECTRA-discriminator	main	0.1100	encoder	-	-	-	-	-	unquantized	-	서울대 KR-ELECTRA discriminator
+0	klue_bert_base	klue/bert-base	main	0.1112	encoder	-	-	-	-	-	unquantized	-	첨부 하단 KLUE-BERT
+1	kobigbird_bert_base	monologg/kobigbird-bert-base	main	0.1144	encoder	-	-	-	-	-	unquantized	-	4096-token 한국어 BigBird
+1	deberta_v3_base_korean	team-lucid/deberta-v3-base-korean	main	0.1353	encoder	-	-	-	-	-	unquantized	-	한국어 DeBERTa-v3 base
+1	kf_deberta_base	kakaobank/kf-deberta-base	main	0.1800	encoder	-	-	-	-	-	unquantized	-	카카오뱅크 한국어 금융 DeBERTa
+1	klue_roberta_large	klue/roberta-large	main	0.3367	encoder	-	-	-	-	-	unquantized	-	KLUE RoBERTa large
+1	modernbert_korean_large_preview	sigridjineth/ModernBERT-korean-large-preview	main	0.3948	encoder	-	-	-	-	-	unquantized	-	첨부 하단 ModernBERT-Ko의 공개 한국어 large preview
+0	modernbert_large	answerdotai/ModernBERT-large	main	0.3959	encoder	-	-	-	-	-	unquantized	-	영어 중심 ModernBERT large
+1	deberta_v3_xlarge_korean	team-lucid/deberta-v3-xlarge-korean	main	0.7816	encoder	-	-	-	-	-	unquantized	-	한국어 DeBERTa-v3 xlarge
+0	kobert_base_v1	skt/kobert-base-v1	main	0.0922	encoder	-	-	-	-	-	unquantized	-	통합본 P2 저비용 한국어 encoder
+1	klue_roberta_base	klue/roberta-base	main	0.1107	encoder	-	-	-	-	-	unquantized	-	통합본 P2 저비용 KLUE RoBERTa
+1	ax_encoder_base	skt/A.X-Encoder-base	main	0.1494	encoder	-	-	-	-	-	unquantized	-	통합본 P0 ModernBERT 계열 16K 한국어 encoder
+1	xlm_roberta_large	FacebookAI/xlm-roberta-large	main	0.5612	encoder	-	-	-	-	-	unquantized	-	통합본 P3 다국어 encoder 대조군
+1	xlm_roberta_xl	facebook/xlm-roberta-xl	main	3.5000	encoder	-	-	-	-	-	unquantized	-	XLM-R XL 100개 언어 2.5TB 사전학습; 대형 bidirectional 상한 후보
+
+1	ko_sroberta_multitask	jhgan00/ko-sroberta-multitask	main	0.1100	embedding	-	-	-	-	-	unquantized	-	한국어 SBERT baseline; Hub 권한이 없으면 자동 건너뜀
+0	multilingual_e5_large	intfloat/multilingual-e5-large	main	0.5599	embedding	-	-	-	-	-	unquantized	-	첨부 하단 multilingual-e5
+1	koe5	nlpai-lab/KoE5	main	0.5599	embedding	-	-	-	-	-	unquantized	-	한국어 E5
+1	bge_m3	BAAI/bge-m3	main	0.5678	embedding	-	-	-	-	-	unquantized	-	다국어 BGE-M3
+1	bge_m3_ko	dragonkue/BGE-m3-ko	main	0.5678	embedding	-	-	-	-	-	unquantized	-	한국어 BGE-M3
+1	kure_v1	nlpai-lab/KURE-v1	main	0.5678	embedding	-	-	-	-	-	unquantized	-	한국어 retrieval embedding
+0	snowflake_arctic_embed_l_v2	Snowflake/snowflake-arctic-embed-l-v2.0	main	0.5678	embedding	-	-	-	-	-	unquantized	-	다국어 Arctic embedding
+1	qwen3_embedding_0_6b	Qwen/Qwen3-Embedding-0.6B	main	0.5958	embedding	-	-	-	-	-	unquantized	-	Qwen3 embedding 0.6B
+1	kanana_nano_2_1b_embedding	kakaocorp/kanana-nano-2.1b-embedding	main	2.0870	embedding	-	-	-	-	-	unquantized	-	Kanana 한국어 embedding
+1	qwen3_embedding_4b	Qwen/Qwen3-Embedding-4B	main	4.0218	embedding	-	-	-	-	-	unquantized	-	Qwen3 embedding 4B
+1	qwen3_embedding_8b	Qwen/Qwen3-Embedding-8B	main	7.5673	embedding	-	-	-	-	-	unquantized	-	Qwen3 embedding 8B
+0	bge_multilingual_gemma2	BAAI/bge-multilingual-gemma2	main	9.2417	embedding	-	-	-	-	-	unquantized	-	Gemma2 기반 다국어 embedding
+1	gte_base_korean	upskyy/gte-base-korean	main	0.3054	embedding	-	-	-	-	-	unquantized	-	통합본 P2 한국어 GTE embedding
+1	harrier_oss_v1_27b	microsoft/harrier-oss-v1-27b	main	27.0000	embedding	-	-	-	-	-	unquantized	-	94개 언어·32K context decoder embedding; MTEB v2 대형 상한 후보
+
+1	gte_reranker_modernbert_base	Alibaba-NLP/gte-reranker-modernbert-base	main	0.1496	reranker	-	-	-	-	-	unquantized	-	ModernBERT cross-encoder reranker
+0	bge_reranker_v2_m3	BAAI/bge-reranker-v2-m3	main	0.5678	reranker	-	-	-	-	-	unquantized	-	다국어 BGE reranker
+1	bge_reranker_v2_m3_ko	dragonkue/bge-reranker-v2-m3-ko	main	0.5678	reranker	-	-	-	-	-	unquantized	-	한국어 BGE reranker
+1	qwen3_reranker_0_6b	Qwen/Qwen3-Reranker-0.6B	main	0.5958	reranker	-	-	-	-	-	unquantized	-	Qwen3 reranker 0.6B
+1	qwen3_reranker_4b	Qwen/Qwen3-Reranker-4B	main	4.0218	reranker	-	-	-	-	-	unquantized	-	Qwen3 reranker 4B
+
+1	hcx_seed_text_0_5b	naver-hyperclovax/HyperCLOVAX-SEED-Text-Instruct-0.5B	main	0.5663	decoder	-	-	-	-	-	unquantized	-	HyperCLOVA X SEED text 0.5B
+0	qwen3_0_6b	Qwen/Qwen3-0.6B	main	0.7516	decoder	-	-	-	-	-	unquantized	-	Qwen3 hybrid thinking 0.6B
+0	gemma3_1b_it	google/gemma-3-1b-it	main	0.9999	decoder	-	-	-	-	-	unquantized	-	접근 동의 필요 가능
+1	exaone4_1_2b	LGAI-EXAONE/EXAONE-4.0-1.2B	main	1.2794	decoder	-	-	-	-	-	unquantized	-	EXAONE 4.0 hybrid 1.2B
+0	polyglot_ko_1_3b	EleutherAI/polyglot-ko-1.3b	main	1.4325	decoder	-	-	-	-	-	unquantized	-	Polyglot-Ko 1.3B
+1	hcx_seed_text_1_5b	naver-hyperclovax/HyperCLOVAX-SEED-Text-Instruct-1.5B	main	1.5855	decoder	-	-	-	-	-	unquantized	-	접근 동의 필요 가능
+0	qwen3_1_7b	Qwen/Qwen3-1.7B	main	2.0317	decoder	-	-	-	-	-	unquantized	-	Qwen3 hybrid thinking 1.7B
+1	midm2_mini	K-intelligence/Midm-2.0-Mini-Instruct	main	2.3055	decoder	-	-	-	-	-	unquantized	-	KT Mi:dm 2.0 Mini
+0	exaone35_2_4b	LGAI-EXAONE/EXAONE-3.5-2.4B-Instruct	main	2.4053	decoder	-	-	-	-	-	unquantized	-	EXAONE 3.5 instruct 2.4B
+0	exaone_deep_2_4b	LGAI-EXAONE/EXAONE-Deep-2.4B	main	2.4053	decoder	-	-	-	-	-	unquantized	-	EXAONE Deep 2.4B
+0	hcx_seed_vision_3b	naver-hyperclovax/HyperCLOVAX-SEED-Vision-Instruct-3B	main	3.7212	decoder-multimodal	-	-	-	-	-	unquantized	-	첨부의 SEED 3B는 Vision checkpoint
+0	polyglot_ko_3_8b	EleutherAI/polyglot-ko-3.8b	main	3.9442	decoder	-	-	-	-	-	unquantized	-	Polyglot-Ko 3.8B
+1	qwen3_4b	Qwen/Qwen3-4B	main	4.0225	decoder	-	-	-	-	-	unquantized	-	Qwen3 hybrid thinking 4B
+1	gemma3_4b_it	google/gemma-3-4b-it	main	4.3001	decoder-multimodal	-	-	-	-	-	unquantized	-	접근 동의 필요 가능
+0	polyglot_ko_5_8b	EleutherAI/polyglot-ko-5.8b	main	6.0025	decoder	-	-	-	-	-	unquantized	-	Polyglot-Ko 5.8B
+1	ax4_light	skt/A.X-4.0-Light	main	7.2596	decoder	-	-	-	-	-	unquantized	-	SKT A.X 4.0 Light
+0	ax31_light	skt/A.X-3.1-Light	main	7.2648	decoder	-	-	-	-	-	unquantized	-	SKT A.X 3.1 Light
+1	tri_7b	trillionlabs/Tri-7B	main	7.5269	decoder	-	-	-	-	-	unquantized	-	Trillion Labs Tri-7B
+0	deepseek_r1_distill_qwen_7b	deepseek-ai/DeepSeek-R1-Distill-Qwen-7B	main	7.6156	decoder	-	-	-	-	-	unquantized	-	DeepSeek R1 Qwen distill 7B
+1	exaone35_7_8b	LGAI-EXAONE/EXAONE-3.5-7.8B-Instruct	main	7.8184	decoder	-	-	-	-	-	unquantized	-	EXAONE 3.5 instruct 7.8B
+1	exaone_deep_7_8b	LGAI-EXAONE/EXAONE-Deep-7.8B	main	7.8184	decoder	-	-	-	-	-	unquantized	-	EXAONE Deep 7.8B
+0	ministral_8b	mistralai/Ministral-8B-Instruct-2410	main	8.0198	decoder	-	-	-	-	-	unquantized	consolidated.safetensors	Mistral Ministral 8B instruct; Transformers shard와 중복 weight 제외
+0	deepseek_r1_distill_llama_8b	deepseek-ai/DeepSeek-R1-Distill-Llama-8B	main	8.0303	decoder	-	-	-	-	-	unquantized	-	DeepSeek R1 Llama distill 8B
+0	llama31_8b	meta-llama/Llama-3.1-8B-Instruct	main	8.0303	decoder	-	-	-	-	-	unquantized	-	접근 동의 필요 가능
+1	kanana15_8b	kakaocorp/kanana-1.5-8b-instruct-2505	main	8.0303	decoder	-	-	-	-	-	unquantized	-	Kanana 1.5 8B instruct
+1	qwen3_8b	Qwen/Qwen3-8B	main	8.1907	decoder	-	-	-	-	-	unquantized	-	Qwen3 hybrid thinking 8B
+0	hcx_seed_omni_8b	naver-hyperclovax/HyperCLOVAX-SEED-Omni-8B	main	10.7417	decoder-multimodal	-	-	-	-	-	unquantized	-	첨부의 SEED 8B는 Omni checkpoint; 전체 파라미터 기준 정렬
+0	solar_10_7b	upstage/SOLAR-10.7B-Instruct-v1.0	main	10.7315	decoder	-	-	-	-	-	unquantized	-	Upstage SOLAR 10.7B instruct
+1	midm2_base	K-intelligence/Midm-2.0-Base-Instruct	main	11.5457	decoder	-	-	-	-	-	unquantized	-	KT Mi:dm 2.0 Base
+0	gemma3_12b_it	google/gemma-3-12b-it	main	12.1873	decoder-multimodal	-	-	-	-	-	unquantized	-	접근 동의 필요 가능
+0	mistral_nemo_12b	mistralai/Mistral-Nemo-Instruct-2407	main	12.2478	decoder	-	-	-	-	-	unquantized	consolidated.safetensors	Mistral Nemo 12B instruct; Transformers shard와 중복 weight 제외
+0	polyglot_ko_12_8b	EleutherAI/polyglot-ko-12.8b	main	13.0614	decoder	-	-	-	-	-	unquantized	-	Polyglot-Ko 12.8B
+1	hcx_seed_think_14b	naver-hyperclovax/HyperCLOVAX-SEED-Think-14B	main	14.7481	decoder	-	-	-	-	-	unquantized	-	HyperCLOVA X SEED Think 14B
+0	phi4_14b	microsoft/phi-4	main	14.6595	decoder	-	-	-	-	-	unquantized	-	Microsoft Phi-4
+1	qwen3_14b	Qwen/Qwen3-14B	main	14.7683	decoder	-	-	-	-	-	unquantized	-	Qwen3 hybrid thinking 14B
+1	deepseek_r1_distill_qwen_14b	deepseek-ai/DeepSeek-R1-Distill-Qwen-14B	main	14.7700	decoder	-	-	-	-	-	unquantized	-	DeepSeek R1 Qwen distill 14B
+0	kogpt_6b	kakaobrain/kogpt	KoGPT6B-ryan1.5b-float16	6.0000	decoder	-	-	-	-	-	unquantized	-	KoGPT gated revision; 권한이 없으면 자동 건너뜀
+1	mistral_small_24b	mistralai/Mistral-Small-3.1-24B-Instruct-2503	main	24.0114	decoder-multimodal	-	-	-	-	-	unquantized	consolidated.safetensors	Transformers shard와 중복인 consolidated weight 제외
+0	gemma3_27b_it	google/gemma-3-27b-it	main	27.4324	decoder-multimodal	-	-	-	-	-	unquantized	-	접근 동의 필요 가능
+1	qwen3_30b_a3b	Qwen/Qwen3-30B-A3B	main	30.5321	decoder-moe	-	-	-	-	-	unquantized	-	Qwen3 MoE 30B total 3B active
+0	exaone35_32b	LGAI-EXAONE/EXAONE-3.5-32B-Instruct	main	32.0032	decoder	-	-	-	-	-	unquantized	-	EXAONE 3.5 instruct 32B
+0	exaone_deep_32b	LGAI-EXAONE/EXAONE-Deep-32B	main	32.0032	decoder	-	-	-	-	-	unquantized	-	EXAONE Deep 32B
+1	exaone4_32b	LGAI-EXAONE/EXAONE-4.0-32B	main	32.0032	decoder	-	-	-	-	-	unquantized	-	EXAONE 4.0 hybrid 32B
+0	qwen3_32b	Qwen/Qwen3-32B	main	32.7621	decoder	-	-	-	-	-	unquantized	-	Qwen3 hybrid thinking 32B
+0	deepseek_r1_distill_qwen_32b	deepseek-ai/DeepSeek-R1-Distill-Qwen-32B	main	32.7639	decoder	-	-	-	-	-	unquantized	-	DeepSeek R1 Qwen distill 32B
+1	exaone45_33b	LGAI-EXAONE/EXAONE-4.5-33B	main	34.3501	decoder-multimodal	-	-	-	-	-	unquantized	-	EXAONE 4.5 33B VLM
+0	ax31	skt/A.X-3.1	main	34.6709	decoder	-	-	-	-	-	unquantized	-	SKT A.X 3.1 full
+0	llama33_70b	meta-llama/Llama-3.3-70B-Instruct	main	70.5537	decoder	-	-	-	-	-	unquantized	-	접근 동의 필요; 비양자화 weight는 단일 48GB에 적재 불가
+0	ax4	skt/A.X-4.0	main	71.8925	decoder	-	-	-	-	-	unquantized	-	SKT A.X 4.0 full; 비양자화 weight는 단일 48GB에 적재 불가
+
+# 통합본에서 hidden-state 회귀용으로 명시한 Base/PT 및 잔차 다양성 decoder다.
+1	qwen3_8b_base	Qwen/Qwen3-8B-Base	main	8.1907	decoder-base	-	-	-	-	-	unquantized	-	통합본 P0 회귀용 Qwen3 base
+1	kanana15_8b_base	kakaocorp/kanana-1.5-8b-base	main	8.0303	decoder-base	-	-	-	-	-	unquantized	-	통합본 P0 회귀용 Kanana base
+1	qwen3_14b_base	Qwen/Qwen3-14B-Base	main	14.7683	decoder-base	-	-	-	-	-	unquantized	-	통합본 P1 회귀용 Qwen3 base
+1	qwen25_14b	Qwen/Qwen2.5-14B	main	14.7700	decoder-base	-	-	-	-	-	unquantized	-	통합본 P1 안정성 및 양자화 대조군
+1	mistral_nemo_12b_base	mistralai/Mistral-Nemo-Base-2407	main	12.2478	decoder-base	-	-	-	-	-	unquantized	consolidated.safetensors	통합본 P2 회귀용 Mistral Nemo base; Transformers shard와 중복 weight 제외
+1	gemma3_12b_pt	google/gemma-3-12b-pt	main	12.1873	decoder-base-multimodal	-	-	-	-	-	unquantized	-	통합본 P2 Gemma pretrained; 접근 동의 필요 가능
+1	gemma4_31b	google/gemma-4-31B	main	33.0000	decoder-base-multimodal	-	-	-	-	-	unquantized	-	Gemma 4 dense pretrained 31B 계열; 140+ languages·256K context; regression 고위험 상한 후보
+1	qwen3_30b_a3b_base	Qwen/Qwen3-30B-A3B-Base	main	30.5321	decoder-base-moe	-	-	-	-	-	unquantized	-	통합본 P2 회귀용 Qwen3 MoE base
+1	kanana2_30b_a3b_base	kakaocorp/kanana-2-30b-a3b-base-2601	main	30.6708	decoder-base-moe	-	-	-	-	-	unquantized	-	통합본 wildcard 중 최신 명시 release인 2601 base 선택
+0	solar_10_7b_base	upstage/SOLAR-10.7B-v1.0	main	10.7315	decoder-base	-	-	-	-	-	unquantized	-	통합본 P3 SOLAR pretrained
+1	eeve_10_8b_base	yanolja/YanoljaNEXT-EEVE-10.8B	main	10.8049	decoder-base	-	-	-	-	-	unquantized	-	구 EEVE-Korean-10.8B-v1.0의 공식 이전 checkpoint
+1	llama3_open_ko_8b	beomi/Llama-3-Open-Ko-8B	main	8.0303	decoder-base	-	-	-	-	-	unquantized	-	통합본 P3 한국어 continued-pretraining Llama
+0	yi15_9b	01-ai/Yi-1.5-9B	main	8.8294	decoder-base	-	-	-	-	-	unquantized	-	통합본 P3 글로벌 잔차 다양성
+0	llama31_8b_base	meta-llama/Llama-3.1-8B	main	8.0303	decoder-base	-	-	-	-	-	unquantized	-	통합본 P3 pretrained Llama; 접근 동의 필요 가능
+0	mixtral_8x7b_base	mistralai/Mixtral-8x7B-v0.1	main	46.7028	decoder-base-moe	-	-	-	-	-	unquantized	consolidated.safetensors	통합본 P3 Mixtral; Transformers shard와 중복인 consolidated weight 제외
+
+# 통합본의 검증 필요 최신 Qwen 계열 중 실제 공개된 공식 base와 Judge 계열 checkpoint다.
+0	qwen35_0_8b_base	Qwen/Qwen3.5-0.8B-Base	main	0.8734	decoder-base-multimodal	-	-	-	-	-	unquantized	-	2026-07-26 공식 공개 Base
+0	qwen35_2b_base	Qwen/Qwen3.5-2B-Base	main	2.2741	decoder-base-multimodal	-	-	-	-	-	unquantized	-	2026-07-26 공식 공개 Base
+1	qwen35_4b_base	Qwen/Qwen3.5-4B-Base	main	4.6599	decoder-base-multimodal	-	-	-	-	-	unquantized	-	2026-07-26 공식 공개 Base
+1	qwen35_9b_base	Qwen/Qwen3.5-9B-Base	main	9.6531	decoder-base-multimodal	-	-	-	-	-	unquantized	-	2026-07-26 공식 공개 Base
+1	qwen35_35b_a3b_base	Qwen/Qwen3.5-35B-A3B-Base	main	35.9518	decoder-base-multimodal-moe	-	-	-	-	-	unquantized	-	2026-07-26 공식 공개 Base; 35B total 3B active
+1	qwen36_35b_a3b	Qwen/Qwen3.6-35B-A3B	main	35.9518	decoder-multimodal-moe	-	-	-	-	-	unquantized	-	과제 Judge 계열 공식 checkpoint; 공개 Base는 없음
+
+# 통합본 ENC-DEC/byte 계열. KE-T5와 T5Gemma는 공식 base 크기 변형을 포함한다.
+0	ke_t5_small	KETI-AIR/ke-t5-small	main	0.0769	encoder-decoder	-	-	-	-	-	unquantized	-	한국어 KE-T5 small
+1	ke_t5_base	KETI-AIR/ke-t5-base	main	0.2475	encoder-decoder	-	-	-	-	-	unquantized	-	한국어 KE-T5 base
+1	ke_t5_large	KETI-AIR/ke-t5-large	main	0.7830	encoder-decoder	-	-	-	-	-	unquantized	-	한국어 KE-T5 large
+0	long_ke_t5_small	KETI-AIR/long-ke-t5-small	main	0.1097	encoder-decoder	-	-	-	-	-	unquantized	-	한국어 Long KE-T5 small
+0	long_ke_t5_base	KETI-AIR/long-ke-t5-base	main	0.2967	encoder-decoder	-	-	-	-	-	unquantized	-	한국어 Long KE-T5 base
+1	mt5_large	google/mt5-large	main	1.2300	encoder-decoder	-	-	-	-	-	unquantized	-	통합본 encoder-decoder 대조군
+0	mt5_xl	google/mt5-xl	main	3.7000	encoder-decoder	-	-	-	-	-	unquantized	-	통합본 encoder-decoder 대조군
+1	byt5_base	google/byt5-base	main	0.5820	encoder-decoder-byte	-	-	-	-	-	unquantized	-	통합본 byte-level expression 대조군
+0	byt5_large	google/byt5-large	main	1.2300	encoder-decoder-byte	-	-	-	-	-	unquantized	-	통합본 byte-level expression 대조군
+0	t5gemma_s_s_ul2	google/t5gemma-s-s-ul2	main	0.3125	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 small-small; 접근 동의 필요 가능
+0	t5gemma_b_b_ul2	google/t5gemma-b-b-ul2	main	0.5915	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 base-base; 접근 동의 필요 가능
+0	t5gemma_l_l_ul2	google/t5gemma-l-l-ul2	main	1.2418	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 large-large; 접근 동의 필요 가능
+0	t5gemma_ml_ml_ul2	google/t5gemma-ml-ml-ul2	main	2.2003	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 ml-ml; 접근 동의 필요 가능
+0	t5gemma_xl_xl_ul2	google/t5gemma-xl-xl-ul2	main	3.7670	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 xl-xl; 접근 동의 필요 가능
+0	t5gemma_2b_2b_ul2	google/t5gemma-2b-2b-ul2	main	5.5969	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 2B-2B; 접근 동의 필요 가능
+1	t5gemma_9b_2b_ul2	google/t5gemma-9b-2b-ul2	main	12.2924	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 9B-2B; 접근 동의 필요 가능
+0	t5gemma_9b_9b_ul2	google/t5gemma-9b-9b-ul2	main	20.3334	encoder-decoder	-	-	-	-	-	unquantized	-	T5Gemma 비-IT UL2 9B-9B; 접근 동의 필요 가능
+1	t5gemma2_4b_4b	google/t5gemma-2-4b-4b	main	9.0000	encoder-decoder-multimodal	-	-	-	-	-	unquantized	-	T5Gemma 2 pretrained 4B-4B; 140+ languages·128K context; 접근 동의 필요 가능
