@@ -1,190 +1,110 @@
-# 2026 국립국어원 AI 말평 — 글쓰기 채점 능력 평가
+# 2026 AI 말평 — 글쓰기 채점 능력 평가
 
-학생 글의 **내용·구성·표현** 세 영역 점수를 예측하고, 각 점수에 대한 근거를 생성한다.
-하나의 `Qwen3.5-9B` 백본을 공유하는 **채점 LoRA 어댑터**와 **근거 생성 LoRA 어댑터**로
-구성된다.
+모델 기술서의 **Qwen3.5-9B · ABCD · 8시드 등가중 평균 · SMR** 설정을 사용한다.
+학습은 기존 `main_code.train`과 `main_code_relonation.train`을 사용하고,
+제출 매니페스트는 기존 [docker_release.sh](docker_release.sh)로 생성한다.
+성능 평가는 별도로 진행한다.
 
-이 저장소에는 제출물을 처음부터 재현하는 코드와 스크립트만 들어 있다.
-대회 데이터는 배포가 제한되어 포함하지 않는다.
+## 기술서 기준 설정
 
-| | |
-|---|---|
-| 이미지 | `docker://gyunyeop/writing-scorer:qwen35-8seed-qwenrationale-nooffset-r4-20260825` |
-| 백본 | `Qwen/Qwen3.5-9B` (채점·근거 공유) |
-| 채점 | ABCD 구성 · 8 seed 등가중 앙상블 |
-| 출력 | 영역별 1~5 정수 + 영역별 근거 문장 |
+| 항목 | 채점 | 근거 |
+|---|---|---|
+| 레시피 | [report_abcd.json](main_code/configs/report_abcd.json) | [r18_report_qwen35.json](main_code_relonation/recipes/r18_report_qwen35.json) |
+| 백본 | Qwen3.5-9B, BF16 | 같은 백본 공유 |
+| LoRA | r32 / alpha64 / dropout0.05, attention+MLP | r32 / alpha64 / dropout0.05, q/k/v/o |
+| 학습량 | 11,600편, 1,104 step | 11,600편, 2 epoch |
+| 배치 × 누적 | 32 × 1 | 2 × 16 |
+| 학습률 | LoRA 4e-5, 출력층 2e-4 | 4e-5 |
+| 최대 입력 길이 | 4,096 | 8,192 |
+| warmup 비율 | 0.05 | 0.05 |
+| 시드 | 42~49 | 42 |
 
----
+- A: 5등급 분포 기댓값, MSE + CE.
+- B: 영역별 Soft-Spearman, 가중치 0.2, 온도 0.5.
+- C: rater_set, expected MSE 0.25 + rater CE 0.25.
+- D: 구성 영역 paragraph_mean.
+- 8개 연속 예측을 각각 0.125로 평균한 후 SMR을 한 번 적용한다. 점수 offset은 0이다.
+- 근거는 확정 점수를 유지하며 최대 2,048 tokens, 첫 생성은 temperature 0 / top_p 1이다.
 
-## 채점 모델의 구성 — A · B · C · D
+두 신규 레시피는 확인에 사용한 Qwen snapshot
+`c202236235762e1c871ad0ccb60c8ee5ba337b9a`를 고정한다.
+기존 confirmed_final.json도 ABCD이며 revision은 main이다.
+과거 AB/A.X 체크포인트·해시·성능은 새 실행의 기본값으로 사용하지 않는다.
 
-기준 모델은 마지막 층 토큰 평균에 영역별 선형 출력층과 MSE만 쓴다. 여기에 네 요소를 얹은
-것이 최종 채점 모델이다.
-
-| | 요소 | 무엇을 바꾸는가 | 설정 |
-|---|---|---|---|
-| **A** | 점수 분포 예측 | 영역마다 실수 하나 대신 **1~5점 확률분포**를 내고 기댓값 `Σ k·p_k`를 점수로 쓴다 | `score_head=distribution` |
-| **B** | 영역별 순위 학습 | 배치 안에서 예측 순위가 정답 순위에 가까워지도록 **Soft-Spearman** 손실을 더한다 | `listwise_loss=soft_spearman`, w=0.2 |
-| **C** | 평가자별 보조 학습 | 익명 **평가자 2인**에 대응하는 출력 경로 2개로 9개 세부 평가지표 분포를 예측한다 | `detail_head_mode=rater_set`, w=0.25 |
-| **D** | 문단 구간 평균 | 본문에 남은 **이중 공백**을 문단 단서로 삼아 구간 평균의 평균을 구성 영역 표현에 더한다 | `organization_pooling=paragraph_mean` |
-
-### 각 요소를 넣은 이유
-
-**A.** 학습 라벨은 평가자 점수를 집계한 값이라 `3.7` 같은 소수점이 대부분이다. 정수로
-반올림하면 글 간 미세한 차이가 사라진다. 정답을 인접 두 등급에 나누어(`3.7` → 3에 0.3,
-4에 0.7) 분포로 학습하고, 읽을 때는 기댓값을 써서 연속 점수를 유지한다.
-
-**B.** 공식 지표의 절반이 Spearman이다. 오차만 줄이는 손실은 순위를 직접 개선한다는
-보장이 없으므로, 미분 가능한 근사 순위로 순위 상관을 직접 최적화한다.
-
-**C.** 원천 자료에는 영역 점수뿐 아니라 평가자별 9개 세부 평가지표 점수가 있다. 평가자
-순서가 글마다 같은 사람을 가리키지 않으므로 출력 경로를 평가자에 고정하지 않고, 글마다
-직접·교차 대응 중 손실이 작은 쪽을 쓴다. 최종 출력은 세 영역 점수 그대로이고 보조
-출력층은 추론에 쓰지 않는다.
-
-**D.** 구성 영역은 문단 구조를 본다. 그런데 대회 배포 형식은 문단을 이어 붙여 개행이
-없다. 남아 있는 이중 공백으로 구간을 나누고 구간마다 같은 비중을 준다. 반영 강도 γ는
-**0에서 시작하는 학습 스칼라 하나**라, 단서가 없는 글에서는 잔차가 0이 되어 기준 구성과
-정확히 같아진다.
-
-### 제출 점수 변환과 앙상블
-
-공식 지표는 세 영역 점수의 **평균 하나**만 본다. 영역마다 독립으로 반올림하면 그 평균의
-양자화 간격이 1이지만, 세 정수의 **합**을 연속 예측의 합에 맞추면 1/3로 줄어든다
-(`average_matched`).
-
-앙상블은 서로 다른 난수 시드로 학습한 **8개 어댑터의 등가중 평균**이다. 부분집합 중
-최선을 고르면 검증셋에 대한 선택 편향이 붙으므로 8개를 전부 쓴다. 결합은 **정수화 이전
-연속 점수**에서 하고 정수화는 한 번만 한다.
-
-### 근거 모델
-
-근거 문장 정답이 제공되지 않으므로, teacher 모델이 만든 근거를 QC로 거른 뒤 Qwen
-student에 증류했다. 추론에서는 채점 모델이 점수를 먼저 확정하고, 근거 모델은 그 점수를
-**고정 조건**으로 받아 설명만 생성한다(`score_mode=fixed`). 근거 생성이 실패해도 점수는
-어떤 경우에도 응답에 실린다.
-
----
-
-## 재현 절차
-
-### 0. 환경
+## 환경 및 데이터
 
 ```bash
-python -m venv .venv-train && . .venv-train/bin/activate
-pip install -r requirements-train.txt      # 학습·추론
-pip install -r requirements-eval.txt       # 평가
+pip install -r requirements-train.txt -r requirements-eval.txt
 ```
 
-대회 데이터 원본을 `datasets/`에 두고 전처리한다.
+prepared dataset은 `DATASET_ROOT/processed_dataset/{train,validation}.jsonl`에 둔다.
+train 11,600편에는 C 보조 손실에 필요한 원천 준거 라벨이 있어야 하고 validation은 400편이다.
+main_code/build_datasets.sh로 새로 만들 때는 해당 스크립트가 요구하는 공식·원천 자료를
+main_code/datasets/raw_dataset/에 준비한다.
+
+확인에 사용한 환경은 Python 3.13.9, torch 2.13.0+cu130, transformers 5.14.0,
+peft 0.19.1이다. 로컬 모델 cache만 사용하려면
+`HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1`을 지정한다.
+
+## 학습 명령
+
+아래 명령은 사용자가 별도로 실행할 때 전체 학습을 시작한다.
 
 ```bash
-bash main_code/build_datasets.sh
-```
-
-### 1. 채점 모델 — ABCD, 8 seed
-
-**인자 없이 실행하면 ABCD 구성이 그대로 나온다.** 기본값이 곧 제출 설정이다.
-
-```bash
-python -m main_code.train --output-dir results/bbq35_e5_s42
-```
-
-학습 전에 설정을 확인하려면:
-
-```bash
-python show_submission_settings.py          # 사람이 읽는 요약
-
-python -c "
-import dataclasses, json
-from main_code.config import RegressionConfig
-a = dataclasses.asdict(RegressionConfig())
-b = json.load(open('main_code/configs/confirmed_final.json'))
-print('차이:', {k for k in set(a) | set(b) if a.get(k) != b.get(k)} or '없음')
-"
-```
-
-`차이: 없음`이 나와야 한다.
-
-8개 멤버는 `--seed`만 다르다.
-
-```bash
-for s in 42 43 44 45 46 47 48 49; do
-  python -m main_code.train --seed "$s" --output-dir "results/bbq35_e5_s${s}"
+for seed in 42 43 44 45 46 47 48 49; do
+  CUDA_VISIBLE_DEVICES=0 python -m main_code.train \
+    --config main_code/configs/report_abcd.json \
+    --dataset-root /path/to/main_code/datasets \
+    --seed "$seed" --output-dir "results/report_abcd/score_s${seed}" || break
 done
+
+CUDA_VISIBLE_DEVICES=0 python -m main_code_relonation.train \
+  --recipe main_code_relonation/recipes/r18_report_qwen35.json \
+  --train-file /path/to/accepted_teacher_11600.jsonl \
+  --output-dir results/report_abcd/rationale
 ```
 
-체크포인트는 **마지막 step(1104)** 을 쓴다. 검증 400편에서 best-of-N을 고르면 선택 편향이
-붙기 때문이다. GPU 1장 기준 seed당 약 5.5시간.
+채점은 기술서의 64 step 평가 주기 설정을 유지하고 별도 gold overlay를 적용하지 않는다.
+근거 학습 입력은 prompt·고정 점수 검사를 통과하는 accepted 11,600편을 준비한다.
+위 명령의 출력은 `results/report_abcd/score_s42`~`score_s49`,
+`results/report_abcd/rationale`이다. 이미 사용한 출력 디렉터리는 재사용하지 않는다.
+경로를 바꾸면 아래 배포 명령의 OUT_ROOT 또는 개별 어댑터 경로도 함께 지정한다.
 
-### 2. 근거 모델
+teacher 생성에는 기술서의 Gemma4-26B-A4B-it AWQ 경로·revision과 prompt_8 원문을
+main_code_relonation/run_rationale_pipeline.sh에 명시해야 한다.
+현재 보존된 v4 prompt와 prompt_8의 동일성은 미확인이므로 임의로 이름을 바꾸지 않았다.
 
-**인자 없이 실행하면 제출 레시피(v4 프롬프트)가 기본값이다.**
+## 제출 매니페스트
+
+학습 완료 후 다음 명령으로 실제 가중치 해시·prompt sidecar를 담은 매니페스트를 만든다.
+이 명령은 Docker 실행이나 성능 평가를 하지 않는다.
 
 ```bash
-python -m main_code_relonation.train \
-  --train-file <teacher 증류 학습 파일> --output-dir results/rationale_v4_qwen35_student
+bash docker_release.sh check
 ```
 
-teacher 근거 생성부터 student 학습까지 한 번에 돌리려면:
+경로는 SCORE_CHECKPOINTS, RATIONALE_ADAPTER, OUT_ROOT, PYTHON_BIN으로 지정한다.
+완료된 학습 산출물이 없으면 중단한다. 실제 빌드·평가·배포는 별도 작업이다.
+생성된 매니페스트는 `main_code_submission/results/report_manifests/`에 저장하며,
+가중치·실험 결과와 함께 Git에서 제외한다.
 
-```bash
-bash main_code_relonation/run_rationale_pipeline.sh
-```
+## 현재 확인 상태
 
-### 3. 두 모델을 합쳐 이미지 빌드 · 검증 · 배포
+이번 설정 정리에서는 학습·평가 코드와 실행 스크립트를 변경하지 않고,
+JSON 구문·설정 로더 호환성·매니페스트 경로를 확인했다. 이 정리 과정에서는
+학습과 평가는 실행하지 않았다.
 
-```bash
-bash docker_release.sh check    # 아티팩트·지문·매니페스트 preflight
-bash docker_release.sh verify   # 같은 image ID로 400편 HTTP 검증 (약 90분)
-bash docker_release.sh push     # 400편 재검증을 통과할 때만 registry push
-```
+기술서와 구현 사이에는 다음 차이가 남아 있다.
 
-채점 8개 어댑터와 근거 어댑터를 하나의 백본 위에 싣는다. 인자 없이 돌리면 제출본과 같은
-매니페스트를 만들고 제출본 예측 해시로 스스로를 검증한다. **모든 게이트가 fail-closed다**
-— 하나라도 어긋나면 push하지 않는다.
+- 세부 준거 MSE는 9개 준거 단순 평균 대신 영역 안에서 평균한 뒤 세 영역을 균등 평균한다.
+- 평가자 CE는 `ln(5)`로 정규화한다.
+- 근거 생성은 greedy 실패 시 sampling 재시도가 있다.
+- 현재 설정의 Trainer 계산은 채점 warmup 56, 근거 726 step / warmup 37이다.
+  기술서의 표기는 각각 55, 725 / 36이며, 비율 0.05·2 epoch를 유지한 채
+  이 숫자까지 고정하려면 코드 변경이 필요하다.
+- AWQ teacher의 정확한 revision과 prompt_8 원문은 아직 연결되지 않았다.
 
-체크포인트 경로는 `SCORE_CHECKPOINTS`, 근거 어댑터는 `RATIONALE_ADAPTER`로 덮어쓴다.
+show_submission_settings.py의 과거 상수는 현재 설정의 기준으로 사용하지 않는다.
 
-### 4. 업로드본 재검증 (다른 서버에서)
-
-```bash
-cd code_for_docker_check_otherserv
-bash check_uploaded_final.sh /path/to/release.txt
-```
-
-registry에서 digest로 pull해 400편을 다시 돌린다. 느린 GPU에서는 근거 생성이
-`deadline_seconds`에 걸려 강등될 수 있고, 그 경우에도 점수는 온전히 실린다.
-`HTTP_DEGRADED_RESPONSE_BUDGET=3`을 주면 통과한다.
-
----
-
-## 구조
-
-```
-main_code/              채점 모델 학습·추론
-  config.py             모든 실행 옵션의 단일 원천. 기본값 = 제출 설정(ABCD)
-  configs/confirmed_final.json   제출 resolved config (기본값과 동일해야 함)
-  models.py             백본 + LoRA + 점수 head + 손실
-  datasets.py           입력 조립, 에세이 표면, 문단·문장 span
-  official_metrics.py   공지 원문 그대로의 RMSE/Spearman. 수정 금지
-  postprocess.py        average_matched 정수 변환
-main_code_relonation/   근거 모델 학습·추론
-  prompts/rationale_prompt_v4.txt                제출본 근거 프롬프트
-  recipes/r17_qwen35_lora_fixed_prompt_v4.json   제출본 학습 레시피
-main_code_submission/   서빙 (FastAPI + transformers), Dockerfile
-  engine.py             백본 1벌 공유 → 8어댑터 채점 → 근거
-  degrade.py            근거 실패 시에도 점수는 반드시 싣는 경로
-docker_release.sh       빌드 → 400편 검증 → push
-code_for_docker_check_otherserv/   업로드본 재검증 번들
-```
-
-## 테스트
-
-```bash
-python -m pytest main_code/tests main_code_relonation/tests main_code_submission/tests -q
-```
-
-공식 지표 재현, `average_matched` 정수화, 근거 프롬프트 바인딩, 점수 유실 금지, 제출
-매니페스트 구성을 코드로 고정한다. 대회 데이터나 빌드 staging이 없는 새 클론에서는
-해당 테스트가 skip된다.
+로컬 검토 자료·정리 문서·보조 실행 도구·학습 산출물은 Git에서 제외한다.
+새로 추가할 파일은 기존 배포 스크립트가 사용하는 위의 채점·근거 recipe JSON 2개다.

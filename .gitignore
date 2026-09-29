@@ -55,11 +55,19 @@ optimizer*.bin
 /submission_assets/
 /backup/
 /backups/
+# 로컬 검토 기록: 코드 사본, 로그, PDF 추출 이미지, 검증 JSON과 백업.
+/audit_*/
+# 로컬 정리 문서와 보조 도구. 공개 실행 경로는 기존 train.py/docker_release.sh를 사용한다.
+/reproduction/
+/reproduce_report.sh
+/main_code_submission/manifests/report_abcd.template.json
 /tmp_trashcan*/
 /tmp_trash_can*/
 *trash*
 
 # ---- 실험 산출물 -------------------------------------------------------
+# 기술서 설정의 채점/근거 학습 출력. 실행 설정 JSON은 별도 경로에 둔다.
+/results/
 # results/ 아래는 전부 제외하고, 방법론 요약 문서만 되살린다.
 main_code/results/**
 !main_code/results/all_results.md
@@ -173,7 +181,7 @@ main_code_relonation/run_rationale_teacher_ab.sh
 main_code_relonation/run_rationale_full11600_r32.sh
 code_for_docker_check_otherserv/test_release_flow.sh
 
-# --- 폐기/백업 preset. 최종은 configs/confirmed_final.json 하나다. ---
+# --- 폐기/백업 preset. 기술서 실행 설정은 configs/report_abcd.json이다. ---
 main_code/configs/confirmed_c02_ax4.json
 main_code/configs/confirmed_ab_only_20260825.json
 

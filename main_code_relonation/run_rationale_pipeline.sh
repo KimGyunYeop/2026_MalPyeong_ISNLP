@@ -42,13 +42,18 @@ GPU="${GPU:-0}"
 PYTHON_BIN="${PYTHON_BIN:-${ROOT_DIR}/.venv-train/bin/python}"
 VLLM_PYTHON="${VLLM_PYTHON:-${ROOT_DIR}/.venv-vllm/bin/python}"
 OUT_ROOT="${OUT_ROOT:-${ROOT_DIR}/main_code_relonation/results}"
-RUN_NAME="${RUN_NAME:-rationale_ax_v1}"
+RUN_NAME="${RUN_NAME:-report_rationale_v4}"
 WORK="${OUT_ROOT}/${RUN_NAME}"
 
 # teacher. FAQ §5가 "학습 과정에서 제출 제한보다 큰 모델을 티처로 활용"을 명시적으로 허용한다.
-# 기본값은 캐시에 있는 MoE instruct다(총 30B, 활성 약 3B라 생성이 빠르다).
-TEACHER_MODEL="${TEACHER_MODEL:-Qwen/Qwen3-30B-A3B-Instruct-2507-FP8}"
-TEACHER_MODEL_REVISION="${TEACHER_MODEL_REVISION:-5a5a776300a41aaa681dd7ff0106608ef2bc90db}"
+# 기술서의 Gemma4-26B-A4B-it AWQ 경로와 revision은 실행 시 명시한다.
+TEACHER_MODEL="${TEACHER_MODEL:-}"
+TEACHER_MODEL_REVISION="${TEACHER_MODEL_REVISION:-}"
+if [[ "${STAGE}" == teacher || "${STAGE}" == generate ]]; then
+  : "${TEACHER_MODEL:?기술서의 Gemma4-26B-A4B-it AWQ 저장소 또는 로컬 경로를 지정하세요}"
+  : "${TEACHER_MODEL_REVISION:?사용할 teacher의 정확한 revision을 지정하세요}"
+  : "${RATIONALE_PROMPT_FILE:?기술서 prompt_8 원문 경로가 필요합니다. v4와 동일하다고 가정하지 않습니다}"
+fi
 TEACHER_SERVED_MODEL="${TEACHER_SERVED_MODEL:-teacher}"
 TEACHER_PORT="${TEACHER_PORT:-8100}"
 TEACHER_API_BASE="${TEACHER_API_BASE:-http://127.0.0.1:${TEACHER_PORT}/v1}"
@@ -63,13 +68,16 @@ JUDGE_PORT="${JUDGE_PORT:-8300}"
 JUDGE_API_BASE="${JUDGE_API_BASE:-http://127.0.0.1:${JUDGE_PORT}/v1}"
 
 # 학생. 점수 백본과 같은 모델을 쓴다(instruct 계열이라 chat template이 정상이다).
-RECIPE="${RECIPE:-${ROOT_DIR}/main_code_relonation/recipes/r12_ax_lora_fixed_prompt_v1.json}"
-RATIONALE_PROMPT_FILE="${RATIONALE_PROMPT_FILE:-${ROOT_DIR}/main_code_relonation/prompts/rationale_prompt_v1.txt}"
+RECIPE="${RECIPE:-${ROOT_DIR}/main_code_relonation/recipes/r18_report_qwen35.json}"
+RATIONALE_PROMPT_FILE="${RATIONALE_PROMPT_FILE:-${ROOT_DIR}/main_code_relonation/prompts/rationale_prompt_v4.txt}"
 SCORE_SOURCE="${SCORE_SOURCE:-human_average_matched}"
 LIMIT_ARGS=()
 [[ -n "${LIMIT:-}" ]] && LIMIT_ARGS=(--limit "${LIMIT}")
-# 비어 있으면 teacher_generate의 역사적 기본 hint를 그대로 쓴다(v1/v3 재현 불변).
+# 현재 v4 student와 동일한 생성 길이 지시를 teacher에도 전달한다.
 HINT_ARGS=()
+TEACHER_SKELETON_HINT="${TEACHER_SKELETON_HINT:-6~9문장 450~540 tokens}"
+export TEACHER_RATIONALE_CHAR_LIMIT="${TEACHER_RATIONALE_CHAR_LIMIT:-1200}"
+export TEACHER_REQUIRE_QUOTES="${TEACHER_REQUIRE_QUOTES:-1}"
 [[ -n "${TEACHER_SKELETON_HINT:-}" ]] && HINT_ARGS=(--skeleton-hint "${TEACHER_SKELETON_HINT}")
 
 mkdir -p "${WORK}"
@@ -122,8 +130,7 @@ teacher)
   free_mib=$(nvidia-smi --query-gpu=memory.free --format=csv,noheader,nounits -i "${GPU}")
   if (( free_mib < TEACHER_MIN_FREE_GIB * 1024 )); then
     echo "GPU ${GPU} 여유 메모리 ${free_mib} MiB < 요구 $((TEACHER_MIN_FREE_GIB * 1024)) MiB." >&2
-    echo "학습이 끝나기를 기다리거나, 더 작은 teacher(예: Qwen/Qwen3-30B-A3B-Instruct-2507-FP8)와" >&2
-    echo "TEACHER_MIN_FREE_GIB=40 TEACHER_GPU_UTIL=0.40 을 쓰세요." >&2
+    echo "GPU 여유 공간을 확보하거나 해당 AWQ 모델에 맞게 TEACHER_MIN_FREE_GIB/TEACHER_GPU_UTIL을 지정하세요." >&2
     exit 2
   fi
   run "${VLLM_PYTHON}" -m vllm.entrypoints.openai.api_server \
@@ -198,7 +205,7 @@ generate)
     --rationale-prompt-file "${RATIONALE_PROMPT_FILE}" \
     --score-source "${SCORE_SOURCE}" \
     --concurrency "${CONCURRENCY:-16}" \
-    --max-tokens "${TEACHER_MAX_TOKENS:-512}" \
+    --max-tokens "${TEACHER_MAX_TOKENS:-2048}" \
     "${HINT_ARGS[@]}" "${EXTRA[@]}" "${LIMIT_ARGS[@]}"
   if [[ "${DRY_RUN:-0}" != "1" ]]; then
     "${PYTHON_BIN}" - "${WORK}/pseudo_train.jsonl.manifest.json" \

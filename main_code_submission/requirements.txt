@@ -11,5 +11,7 @@ accelerate==1.10.1
 bitsandbytes==0.49.2
 safetensors==0.8.0
 numpy==2.2.6
+# utils -> official_metrics imports scipy.stats at server startup.
+scipy>=1.13,<2
 fastapi==0.115.6
 uvicorn==0.34.0

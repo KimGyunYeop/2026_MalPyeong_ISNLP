@@ -125,6 +125,9 @@ CONTAINER_ROOT = "/opt/submission"
 # 이전 build의 배포 지문을 복사하지 않는다. 아래에서 실제 source/staged tree를 다시 읽어
 # source/deployed 지문을 명시적으로 채운다.
 extra = dict(raw.get("extra") or {})
+declared_source_cores = extra.get("source_checkpoint_artifacts", {})
+declared_source_closures = extra.get("source_checkpoint_closures", {})
+declared_source_rationale = extra.get("source_rationale_runtime_artifact")
 extra.pop("source_run", None)
 declared_source_checkpoint = extra.pop("source_checkpoint_artifact", None)
 legacy_source_checkpoint = extra.pop("checkpoint_artifact", None)
@@ -226,6 +229,18 @@ for member in raw["score_members"]:
     try:
         source_artifact = checkpoint_fingerprint(source)
         source_closure = artifact_tree_fingerprint(source)
+        if declared_source_cores:
+            require_fingerprint(
+                label=f"source checkpoint {member['name']}",
+                expected=declared_source_cores.get(member["name"]),
+                actual=source_artifact,
+            )
+        if declared_source_closures:
+            require_fingerprint(
+                label=f"source checkpoint closure {member['name']}",
+                expected=declared_source_closures.get(member["name"]),
+                actual=source_closure,
+            )
         if declared_source_checkpoint is not None:
             require_fingerprint(
                 label=f"source checkpoint {member['name']}",
@@ -268,6 +283,12 @@ if rationale.get("adapter"):
     source = Path(rationale["adapter"])
     if not source.is_dir():
         raise SystemExit(f"근거 어댑터가 없습니다: {source}")
+    if declared_source_rationale is not None:
+        require_fingerprint(
+            label="source rationale adapter",
+            expected=declared_source_rationale,
+            actual=artifact_tree_fingerprint(source),
+        )
     print(f"  근거 어댑터: {source}")
     try:
         prompt_binding = bind_adapter_prompt_to_manifest(rationale, source)

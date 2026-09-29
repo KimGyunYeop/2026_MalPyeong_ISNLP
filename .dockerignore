@@ -7,6 +7,9 @@
 !main_code/config.py
 !main_code/datasets.py
 !main_code/models.py
+!main_code/official_metrics.py
+!main_code/paragraph_boundary.py
+!main_code/quantization_objectives.py
 !main_code/postprocess.py
 !main_code/utils.py
 !main_code/candidiate_model_list/
@@ -24,6 +27,7 @@
 !main_code_submission/__init__.py
 !main_code_submission/artifact_integrity.py
 !main_code_submission/config.py
+!main_code_submission/degrade.py
 !main_code_submission/engine.py
 !main_code_submission/prompts.py
 !main_code_submission/rationale_prompt_binding.py

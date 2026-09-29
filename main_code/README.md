@@ -5,22 +5,21 @@
 RMSE / Spearman을 계산한다.
 
 전체 재현 절차와 최종 제출 구성은 저장소 루트의 `README.md`가 기준이다.
-현재 설정을 눈으로 확인하려면 루트에서 다음을 실행한다.
-
-```bash
-python show_submission_settings.py
-```
+현재 실행 설정은 `configs/report_abcd.json`이다.
 
 ## 실행
 
 ```bash
-# 학습 — 인자 없이 돌리면 제출 구성(ABCD) 멤버 s42가 나온다
-python -m main_code.train --output-dir results/bbq35_e5_s42
+# 학습 — 한 시드 예시. 전체 8시드 실행은 루트 README 참고
+CUDA_VISIBLE_DEVICES=0 python -m main_code.train \
+  --config main_code/configs/report_abcd.json \
+  --dataset-root /path/to/main_code/datasets \
+  --seed 42 --output-dir results/report_abcd/score_s42
 
 # 추론 — 체크포인트 하나로 400편 평가
 python -m main_code.infer --checkpoint <checkpoint> --output-dir <out>
 
-# 데이터 준비 (원본 JSONL이 datasets/ 에 있어야 한다)
+# 데이터 준비 (공식·원천 자료를 main_code/datasets/raw_dataset/에 배치)
 bash main_code/build_datasets.sh
 ```
 
@@ -28,7 +27,7 @@ bash main_code/build_datasets.sh
 
 | 파일 | 역할 |
 |---|---|
-| `config.py` | `RegressionConfig` 단일 dataclass. 기본값이 곧 제출 설정이다 |
+| `config.py` | `RegressionConfig` dataclass. 기술서 실행 시 `report_abcd.json`을 명시한다 |
 | `datasets.py` | 입력 조립, 에세이 표면, 문단·문장 span, collator |
 | `models.py` | 백본 + LoRA + 점수 head, 손실 전부 |
 | `train.py` / `infer.py` | 학습·추론 진입점 |
@@ -37,13 +36,14 @@ bash main_code/build_datasets.sh
 | `official_metrics.py` | 공지 원문 그대로의 RMSE / Spearman. **수정 금지** |
 | `paragraph_boundary.py` | 문단 경계 후보·라벨 (요소 D와 문단 보조 과제가 쓴다) |
 | `quantization_objectives.py` | 정수 출력 제약을 학습 손실로 다루는 목적함수 |
-| `configs/confirmed_final.json` | 최종 제출 설정. `RegressionConfig()` 기본값과 동일하다 |
+| `configs/confirmed_final.json` | 기존 Python 기본값과 호환되는 ABCD 설정, revision `main` |
 
 ## 설정 preset
 
 | 파일 | 내용 |
 |---|---|
-| `configs/confirmed_final.json` | **최종 제출 구성** |
+| `configs/report_abcd.json` | **기술서 기준 실행 설정, Qwen revision 고정** |
+| `configs/confirmed_final.json` | 기본값 호환 ABCD 설정. 고정 revision 실행에는 `report_abcd.json` 사용 |
 | `configs/confirmed_y1.json` | 초기 회귀 head 계보 (동결) |
 | `configs/baseline.json` | 2026-08-10 이전 legacy baseline (동결) |
 

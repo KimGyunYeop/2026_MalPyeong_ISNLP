@@ -1,21 +1,20 @@
 # 근거 모델 recipe
 
-| 파일 | 상태 | 핵심 설정 |
-|---|---|---|
-| `r11_ax_lora_fixed.json` | legacy control | NF4 QLoRA, r16/a32, baseline prompt |
-| `r12_ax_lora_fixed_prompt_v1.json` | 현행 선택·배포 recipe | BF16 LoRA, r32/a64, prompt v1 |
+기술서 기준 실행은 [r18_report_qwen35.json](r18_report_qwen35.json)을 사용한다.
+Qwen3.5-9B BF16, attention q/k/v/o LoRA r32/alpha64/dropout0.05,
+batch 2 × 누적 16, 학습률 4e-5, 2 epoch, warmup 0.05 설정이다.
+입력 길이는 8192, 생성 상한은 2048, 점수는 fixed다.
 
-r12는 A.X-4.0-Light의 Q/K/V/O projection에 LoRA를 학습한다. Score LoRA의
-attention+MLP target보다 좁지만 부분집합이므로 제출 shared CausalLM loader와 호환된다. 두
-teacher arm은 같은 r12 파일과 seed를 쓰고, 입력 `pseudo_train.jsonl`과 그에 따른 row/step 수만
-달라질 수 있다.
+| 파일 | 용도 |
+|---|---|
+| r18_report_qwen35.json | 기술서 기준 Qwen/v4 실행, 백본 revision 고정 |
+| r17_qwen35_lora_fixed_prompt_v4.json | 같은 Qwen/v4 설정, revision main |
+| r16_qwen35_lora_fixed_prompt_v3.json | 과거 Qwen/v3 실험 |
+| r11~r15 | 과거 A.X 실험 |
 
-Recipe의 상대 `rationale_prompt_file`은 recipe 파일 위치를 기준으로 resolve된다. 학습 후에는
-recipe보다 adapter sidecar가 runtime의 authoritative prompt다. 과거 결과를 재현할 때 current
-default에 의존하는 partial JSON을 만들지 말고 당시의 `resolved_config.json`을 사용한다.
+상대 rationale_prompt_file은 recipe 파일 위치 기준으로 해석한다.
+학습된 어댑터의 prompt 원문·ID·SHA-256 sidecar는 추론에서도 동일하게 사용한다.
+현재 v4와 기술서 prompt_8의 동일성은 미확인이다.
 
-현행 사용자 진입점 `workflow.sh rationale-final`이 호출하는 full runner의 기본 recipe는 r12다.
-다만 Python에서 bare
-`RationaleConfig(model_id=...)`를 직접 만들면 legacy 호환용 baseline prompt와 r16/a32가 남아
-있으므로, 최종 구조를 import해 쓰는 코드는 r12를 `load_config()`로 읽거나 선택 adapter의 runtime
-sidecar를 bind해야 한다.
+11,600편의 2 epoch를 현재 Python Trainer로 실행하면 726 step / warmup 37이다.
+기술서의 725 / 36과의 차이는 Python 수정 금지 조건에 따라 남겨 두었다.
