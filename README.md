@@ -24,16 +24,47 @@ Qwen3.5-9B 백본에 채점 LoRA 8개와 근거 생성 LoRA 1개를 결합한다
 
 ## Installation
 
+Python 3.13, CUDA 13.0 드라이버, GPU 메모리 80GB 이상이 필요하다(채점 학습 peak 약 70GiB, RTX PRO 6000 96GB에서 확인).
+
 ```bash
 pip install torch==2.13.0 --index-url https://download.pytorch.org/whl/cu130
 pip install -r requirements-train.txt -r requirements-eval.txt \
   -r main_code_relonation/requirements.txt \
   transformers==5.14.0 peft==0.19.1 accelerate==1.14.0
+pip install pytest  # 테스트 실행 시
 ```
+
+teacher 근거 생성용 vLLM은 별도 환경에 설치한다.
+
+```bash
+python -m venv .venv-vllm
+.venv-vllm/bin/pip install vllm==0.25.1 transformers==5.14.0 ninja
+```
+
+Docker 제출에는 Docker Engine과 [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)이 필요하다.
+Qwen3.5-9B는 학습 시 Hugging Face 기본 cache(`~/.cache/huggingface/hub`)에 내려받으며, 이미지 빌드도 이 위치에서 가중치를 복사한다.
 
 ## Data
 
-공식 train·validation JSONL은 `main_code/datasets/raw_dataset/official_competition/`에 둔다. 국립국어원 원천 자료의 `NIKL_GRADING WRITING DATA...` 폴더 3개는 `raw_dataset/` 아래에 원본 이름 그대로 둔다.
+두 종류의 자료가 필요하다. 모두 국립국어원 사용 신청과 승인이 필요하다.
+
+- **대회 자료:** [글쓰기 채점 능력 평가 말뭉치 2026](https://kli.korean.go.kr/benchmark/taskOrdtm/taskDownload.do?taskOrdtmId=205&clCd=ING_TASK&subMenuId=sub02)의 train·validation JSONL
+- **원천 자료:** 국립국어원 모두의 말뭉치의 「글쓰기 채점 자료 말뭉치 2024」, 「글쓰기 채점 자료 말뭉치 2023(2)」, 「글쓰기 채점 자료 말뭉치 2023(1)」
+
+압축을 풀어 다음 위치에 둔다.
+
+```text
+main_code/datasets/raw_dataset/
+├── official_competition/
+│   ├── 글쓰기채점능력평가2026_train.jsonl
+│   └── 글쓰기채점능력평가2026_validation.jsonl
+├── NIKL_GRADING WRITING DATA 2023/       # GWGR*.json
+├── NIKL_GRADING WRITING DATA 2023(2)/    # GWGR*.json
+└── NIKL_GRADING WRITING DATA 2024/       # GWGR*.json
+```
+
+- `official_competition/`에는 `*train.jsonl`과 `*validation.jsonl`이 각각 하나만 있어야 한다.
+- 원천 자료 폴더는 이름이 `NIKL_GRADING WRITING DATA`로 시작하는 폴더가 정확히 3개여야 하고, 각 폴더 바로 아래에 `*.json`이 있어야 한다. 배포 폴더명을 그대로 쓰면 된다.
 
 ```bash
 bash scripts/prepare_data.sh
@@ -44,18 +75,18 @@ bash scripts/prepare_data.sh
 <details>
 <summary>근거 학습 데이터 생성</summary>
 
-이미 생성한 데이터가 있으면 생략한다. 사용할 teacher의 AWQ 모델 경로와 고정 revision을 지정한다. teacher 실행에는 vLLM이 필요하며, `VLLM_PYTHON`으로 실행할 Python 경로를 지정한다.
+이미 생성한 데이터가 있으면 생략한다. teacher 모델과 고정 revision을 지정한다. 아래는 e5 근거 데이터 생성에 사용한 teacher다. teacher 서버는 GPU 여유 메모리 80GiB를 요구하며 `TEACHER_MIN_FREE_GIB`, `TEACHER_GPU_UTIL`로 조정한다.
 
 ```bash
 # 터미널 1: teacher 서버
-VLLM_PYTHON=/path/to/vllm/bin/python \
-  bash scripts/prepare_data.sh teacher /path/to/teacher REVISION
+VLLM_PYTHON=.venv-vllm/bin/python \
+  bash scripts/prepare_data.sh teacher google/gemma-4-26B-A4B-it 4d7ae4984b7db7de8f8457170b3f1a419ee76d52
 
 # 터미널 2: 근거 생성
-bash scripts/prepare_data.sh generate /path/to/teacher REVISION
+bash scripts/prepare_data.sh generate google/gemma-4-26B-A4B-it 4d7ae4984b7db7de8f8457170b3f1a419ee76d52
 ```
 
-결과는 `main_code_relonation/results/report_rationale_v4/pseudo_train.jsonl`에 저장된다. 파싱·점수 복사·QC에 실패한 근거는 학습에서 제외되며 별도 LLM judge 필터는 쓰지 않는다. 같은 명령을 다시 실행하면 실패한 항목만 재생성한다(성공률 하한은 `MIN_TEACHER_SUCCESS_RATE`, 기본 0.80). 생성 완료 후 teacher 서버를 종료하고 학습한다.
+결과는 `main_code_relonation/results/report_rationale_v4/pseudo_train.jsonl`에 저장된다. 사람 점수에 SMR을 적용한 정수 점수를 조건으로 생성하고, 파싱·점수 복사·QC에 실패한 근거는 학습에서 제외한다. 별도 LLM judge 필터는 쓰지 않는다. 같은 명령을 다시 실행하면 실패한 항목만 재생성한다. 생성 완료 후 teacher 서버를 종료하고 학습한다.
 
 </details>
 
@@ -69,7 +100,7 @@ GPU=0 bash scripts/train.sh score
 GPU=0 bash scripts/train.sh rationale
 ```
 
-별도 근거 데이터를 사용하려면 `bash scripts/train.sh rationale /path/to/pseudo.jsonl`로 지정한다. 결과는 `results/report_abcd/`에 저장된다. `OUT_ROOT`로 출력 경로를 변경할 수 있다.
+채점 모델은 시드당 약 5.5시간(RTX PRO 6000 96GB)이 걸리며 끝난 시드는 다시 실행할 때 건너뛴다. 별도 근거 데이터를 사용하려면 `bash scripts/train.sh rationale /path/to/pseudo.jsonl`로 지정한다. 결과는 `results/report_abcd/`에 저장된다. `OUT_ROOT`로 출력 경로를 변경할 수 있다.
 
 ## Docker Submission
 

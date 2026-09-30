@@ -8,6 +8,7 @@
 #   bash scripts/prepare_data.sh generate MODEL REVISION
 #       사람 점수에 SMR을 적용한 정수 점수를 조건으로 근거를 생성한다.
 #       파싱·점수 복사·QC에 실패한 행은 학습 단계에서 제외된다. proxy judge는 쓰지 않는다.
+#       성공률은 출력만 하고 막지 않는다. 하한이 필요하면 MIN_TEACHER_SUCCESS_RATE를 지정한다.
 #
 # 환경변수: PYTHON_BIN, GPU, DATASET_ROOT, FORCE=1(기존 출력 덮어쓰기),
 #           RATIONALE_PROMPT_FILE, TEACHER_OUT_ROOT, RUN_NAME, MIN_TEACHER_SUCCESS_RATE
@@ -57,6 +58,7 @@ teacher|generate)
     RUN_NAME="${RUN_NAME:-report_rationale_v4}" \
     TRAIN_INPUT="${DATASET_ROOT}/processed_dataset/train.jsonl" \
     SCORE_SOURCE=human_average_matched \
+    MIN_TEACHER_SUCCESS_RATE="${MIN_TEACHER_SUCCESS_RATE:-0}" \
     PYTHON_BIN="${PYTHON_BIN}" \
     bash main_code_relonation/run_rationale_pipeline.sh
   ;;
