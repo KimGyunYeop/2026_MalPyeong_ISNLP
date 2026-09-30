@@ -24,4 +24,3 @@ image에 내장한다. release_final.sh 및 docker_release.sh의 verify/push는 
 
 서버 endpoint는 /health, /v1/models, /v1/chat/completions다.
 응답 content에는 content/organization/expression 각각의 정수 score와 rationale을 담은 JSON을 반환한다.
-Y6_matched_fallback.json은 과거 실험 재현용이며 현재 기본값이 아니다.

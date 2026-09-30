@@ -2,7 +2,8 @@
 
 현재 Qwen 레시피는 [rationale_prompt_v4.txt](rationale_prompt_v4.txt)를 사용한다.
 기술서 prompt_8과 같은 원문인지는 미확인이므로 이름이나 해시를 바꾸지 않는다.
-baseline 및 v1~v3 파일은 이전 실험용으로 보존한다.
+baseline_prompt.txt는 prompt를 선언하지 않은 recipe의 기본값이고,
+rationale_prompt_v1.txt는 prompts.py의 prompt ID 판정에 쓰이므로 함께 둔다.
 
 각 template에는 다음 sentinel이 정확히 한 번씩 있어야 한다.
 

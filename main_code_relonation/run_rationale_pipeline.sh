@@ -5,8 +5,10 @@
 #
 #   0) teacher   대형 instruct 모델을 vLLM OpenAI 호환 서버로 띄운다.
 #   1) generate  **확정 점수를 조건으로** teacher가 근거 JSON을 생성한다(pseudo label).
-#   2) judge     별도의 공통 proxy Judge가 형식/정합성 실패를 버린다.
-#   3) train     남은 데이터로 새 LoRA를 학습한다. 점수는 절대 재생성하지 않는다.
+#   2) judge     (선택) 별도의 공통 proxy Judge가 형식/정합성 실패를 버린다.
+#                기술서 학습에는 쓰지 않았다. 사용하려면 train에 PSEUDO_FILE로 그 출력을 넘긴다.
+#   3) train     generate 출력 중 파싱·점수 복사·QC를 통과한 행으로 새 LoRA를 학습한다.
+#                점수는 절대 재생성하지 않는다.
 #   4) verify    학습 어댑터로 추론해 형식 준수와 점수 보존을 확인한다.
 #
 # ## 왜 점수를 고정하는가
@@ -254,7 +256,7 @@ PYEOF
 
 train)
   log "새 LoRA 학습 (score_mode=fixed, 점수 재생성 없음)"
-  PSEUDO="${PSEUDO_FILE:-${WORK}/accepted_pseudo_train.jsonl}"
+  PSEUDO="${PSEUDO_FILE:-${WORK}/pseudo_train.jsonl}"
   [[ -f "${PSEUDO}" || "${DRY_RUN:-0}" == "1" ]] || {
     echo "학습 입력이 없습니다: ${PSEUDO}" >&2; exit 2; }
   run "${PYTHON_BIN}" -m main_code_relonation.train \

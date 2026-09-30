@@ -36,16 +36,13 @@ bash main_code/build_datasets.sh
 | `official_metrics.py` | 공지 원문 그대로의 RMSE / Spearman. **수정 금지** |
 | `paragraph_boundary.py` | 문단 경계 후보·라벨 (요소 D와 문단 보조 과제가 쓴다) |
 | `quantization_objectives.py` | 정수 출력 제약을 학습 손실로 다루는 목적함수 |
-| `configs/confirmed_final.json` | 기존 Python 기본값과 호환되는 ABCD 설정, revision `main` |
 
 ## 설정 preset
 
 | 파일 | 내용 |
 |---|---|
 | `configs/report_abcd.json` | **기술서 기준 실행 설정, Qwen revision 고정** |
-| `configs/confirmed_final.json` | 기본값 호환 ABCD 설정. 고정 revision 실행에는 `report_abcd.json` 사용 |
-| `configs/confirmed_y1.json` | 초기 회귀 head 계보 (동결) |
-| `configs/baseline.json` | 2026-08-10 이전 legacy baseline (동결) |
+| `configs/baseline.json` | 기술서 기준 채점 모델(baseline). report_abcd에서 A·B·C·D만 끈 설정 |
 
 `configs/README.md`에 각 preset의 필드 규약이 있다.
 

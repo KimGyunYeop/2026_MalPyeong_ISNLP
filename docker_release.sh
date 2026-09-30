@@ -75,9 +75,11 @@ left, right = recipe.to_dict(), resolved.to_dict()
 diff = {k:(v,right.get(k)) for k,v in left.items() if k != 'rationale_prompt_source' and v != right.get(k)}
 require(not diff, f'근거 recipe 불일치: {diff}')
 run, completed = read(rationale.parent/'run_manifest.json'), read(rationale.parent/'completed.json')
-require(run['training_row_count'] == 11600, '근거 모델은 accepted 11600편 학습이 필요합니다')
+# 기술서: 미완성·잘못 생성된 근거는 제외하고 학습한다. 따라서 accepted 행 수는 11600 이하다.
+rationale_rows = run['training_row_count']
+require(0 < rationale_rows <= 11600, f'근거 학습 행 수가 잘못됐습니다: {rationale_rows}')
 require(completed['status'] == 'complete', '근거 학습 미완료')
-steps = math.ceil(11600 / (recipe.batch_size * recipe.gradient_accumulation)) * recipe.epochs
+steps = math.ceil(rationale_rows / (recipe.batch_size * recipe.gradient_accumulation)) * recipe.epochs
 require(completed['global_step'] == steps, f'근거 학습 step 불일치: {completed["global_step"]} != {steps}')
 binding = prompt_binding_from_adapter(rationale)
 require(binding.sha256 == recipe.rationale_prompt_sha256, '근거 prompt 불일치')
@@ -107,7 +109,7 @@ manifest = {
         'source_rationale_runtime_artifact':artifact_tree_fingerprint(rationale),
         'rationale_training_rows':run['training_row_count'], 'rationale_steps':completed['global_step'],
         'verified_metrics':None, 'evaluation_status':'deferred_by_user',
-        'report_differences':['rationale: 726 steps / 37 warmup, PDF: 725 / 36',
+        'report_differences':[f'rationale: {int(steps)} steps, PDF: 725 / 36',
                               'score: 56 warmup, PDF: 55',
                               'prompt_8 versus repository v4 identity unverified',
                               'auxiliary-loss equations and sampled retry differ; see audit report'],

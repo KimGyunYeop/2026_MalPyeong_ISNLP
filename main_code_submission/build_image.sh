@@ -4,8 +4,7 @@
 # 사용법:
 #   bash main_code_submission/build_image.sh <manifest> [tag]
 #   bash main_code_submission/build_image.sh \
-#     main_code_submission/manifests/Y6_matched_fallback.json \
-#     y6-cu128-offline-r6-20260811
+#     main_code_submission/results/report_manifests/<tag>_.json <tag>
 #
 # 오케스트레이터는 이미지 뒤에 인자를 붙이지 않으므로 여기서 모은 asset과 manifest가 이미지
 # 안에서 그대로 쓰인다. 컨테이너 안의 manifest는 `/opt/submission`을 root로 다시 쓴다.

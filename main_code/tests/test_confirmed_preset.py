@@ -1,8 +1,8 @@
-"""현재 final, 역사적 Y1, frozen baseline의 3층 설정 계약을 고정한다.
+"""기술서 final(report_abcd)과 frozen baseline의 설정 계약을 고정한다.
 
-`RegressionConfig()`와 no-config train은 ``confirmed_final.json``과 같다. 역사적 Y1과
-pre-Y1 baseline은 각각 완전한 preset을 명시할 때만 선택된다. 일반 부분 JSON은 현재 final을
-상속한다.
+`RegressionConfig()`와 no-config train은 ``report_abcd.json``에서 Qwen revision 고정만
+뺀 것과 같다. pre-Y1 baseline은 완전한 preset을 명시할 때만 선택된다. 일반 부분 JSON은
+현재 final을 상속한다.
 
 과거 실패: preset이 `_note`로 확정 근거를 파일 안에 적었는데 `with_updates`가 dataclass
 field가 아니라며 `unknown config fields: ['_note']`로 즉시 죽었다. `--help`는 config 로드
@@ -25,29 +25,18 @@ from main_code.train import parse_args, resolved_config
 
 MAIN_CODE = Path(__file__).resolve().parents[1]
 CONFIGS = MAIN_CODE / "configs"
-FINAL = CONFIGS / "confirmed_final.json"
-Y1 = CONFIGS / "confirmed_y1.json"
+FINAL = CONFIGS / "report_abcd.json"
 BASELINE = CONFIGS / "baseline.json"
-# 2026-08-25 최종 제출본의 채점 멤버. 8 seed는 --seed만 다르므로 s42의 resolved
-# config가 계열 전체의 레시피다. 이전 확정본(c02/A.X-4.0-Light)은 provenance로
-# configs/confirmed_c02_ax4.json에 보존한다.
-# 2026-09-29: 최종 제출은 A+B가 아니라 ABCD(= A 분포 head + B soft-Spearman +
-# C 평가자 2인 보조 + D 문단 구간 평균)로 확정됐다. 제출 빌드는 다른 서버에서
-# 만들었으므로 이 레포에는 같은 recipe의 재실험 run을 근거로 둔다.
+# 기술서 최종 제출 구성 ABCD(= A 분포 head + B soft-Spearman + C 평가자 2인 보조 +
+# D 문단 구간 평균). 8 seed는 --seed만 다르므로 s42의 resolved config가 계열 전체의
+# 레시피다. 재실험 run이 있으면 네 축이 같은지 확인한다.
+FINAL_MODEL_REVISION = "c202236235762e1c871ad0ccb60c8ee5ba337b9a"
 FINAL_SOURCE = (
     MAIN_CODE
     / "results/qwen_result_analysis/p1_plain_baseline_s42_v1"
     / "c4_ABCD_s42/qwen35_9b/5e33de7af0c8/resolved_config.json"
 )
-FINAL_SHA256 = "968f91c0e1087061ce8551e9516088abbd0d8fcc79ffb301a683b1d11d3c380a"
-
-
-def _normalize(value: object) -> object:
-    """JSON은 tuple을 list로 저장하므로 비교 전에 같은 모양으로 만든다."""
-
-    if isinstance(value, tuple):
-        return [list(item) if isinstance(item, (list, tuple)) else item for item in value]
-    return value
+FINAL_SHA256 = "625f00bb4e751ed76996123c4a29decd9bede367d6f9c7485cbc562197158326"
 
 
 def _executable_json_fields(path: Path) -> set[str]:
@@ -112,14 +101,13 @@ def test_final_and_historical_presets_are_complete() -> None:
     environment_path_fields = {"dataset_root", "extended_data_dir"}
 
     # FINAL은 제출본 resolved config이므로 위 경로 두 개를 뺀 실행 필드를 **전부**
-    # 갖는다. Y1/BASELINE은 그 필드들이 생기기 전에 고정된 역사적 preset이라
-    # additive no-op만 빠질 수 있다.
+    # 갖는다. BASELINE은 --baseline 로더가 schema 전체를 요구하므로 경로 필드까지
+    # 모든 실행 필드를 갖는다.
     assert isinstance(load_config(FINAL), RegressionConfig)
     assert _executable_json_fields(FINAL) == expected_fields - environment_path_fields
-    for path in (Y1, BASELINE):
-        assert isinstance(load_config(path), RegressionConfig)
-        # Y1/BASELINE은 동결된 역사적 preset이라 경로 필드를 그대로 갖는다.
-        assert _executable_json_fields(path) == expected_fields - additive_noop_fields
+    assert isinstance(load_config(BASELINE), RegressionConfig)
+    assert _executable_json_fields(BASELINE) == expected_fields
+    assert additive_noop_fields <= expected_fields
 
 
 def test_final_preset_is_the_submitted_qwen_resolved_config() -> None:
@@ -140,39 +128,50 @@ def test_final_preset_is_the_submitted_qwen_resolved_config() -> None:
             assert final[field] == source[field], field
 
 
-def test_dataclass_and_no_config_train_are_the_confirmed_final() -> None:
-    expected = dataclasses.asdict(load_config(FINAL))
+def test_dataclass_and_no_config_train_are_the_report_final() -> None:
+    # report_abcd.json은 Qwen revision만 고정한다. 나머지 실행 필드는 dataclass 기본값과 같다.
+    final = load_config(FINAL)
+    assert final.model_revision == FINAL_MODEL_REVISION
+    expected = dataclasses.asdict(dataclasses.replace(final, model_revision="main"))
     assert dataclasses.asdict(RegressionConfig().validate()) == expected
     args = Namespace(config=None, baseline=False, model=None)
     assert dataclasses.asdict(resolved_config(args)) == expected
 
 
-def test_historical_y1_is_explicit_and_unchanged() -> None:
-    y1 = load_config(Y1)
-    assert y1 != load_config(FINAL)
-    assert y1.score_head == "regression"
-    assert y1.distribution_loss_weight == 0.0
-    assert y1.distribution_label_smoothing == 0.0
-    assert y1.detail_final_source == "criterion"
-    assert y1.trait_average_loss_weight == 0.5
-    assert y1.best_checkpoint_metric == "official_rmse"
-    assert y1.seed == 42
-    args = Namespace(config=str(Y1), baseline=False, model=None)
-    assert resolved_config(args) == y1
+def test_report_baseline_is_final_without_abcd() -> None:
+    """기술서 기준 채점 모델은 report_abcd에서 A·B·C·D만 끈 설정이다."""
 
-
-def test_frozen_legacy_baseline_is_explicit_and_neutral() -> None:
     baseline = load_config(BASELINE)
     assert baseline == legacy_baseline_config()
-    assert baseline.training_mode == "head_only"
+    assert baseline.model_id == "Qwen/Qwen3.5-9B"
+    assert baseline.model_revision == FINAL_MODEL_REVISION
+    assert baseline.training_mode == "lora_only"
+    # 전체 입력 평균 + 영역별 선형 출력(1+4σ) + 영역별 MSE
+    assert (baseline.pooling, baseline.layer_aggregation) == ("mean", "last")
+    assert baseline.score_head == "regression"
+    assert (baseline.mse_loss_weight, baseline.distribution_loss_weight) == (1.0, 0.0)
+    assert baseline.organization_pooling == "shared"
     assert baseline.detail_head_mode == "none"
     assert baseline.detail_final_source == "direct"
+    assert (baseline.detail_expected_loss_weight, baseline.detail_rater_set_loss_weight) == (0.0, 0.0)
+    assert (baseline.listwise_loss, baseline.listwise_loss_weight) == ("none", 0.0)
     assert baseline.paragraph_boundary_loss_weight == 0.0
-    assert baseline.listwise_loss == "none"
-    assert baseline.listwise_loss_weight == 0.0
     assert baseline.trait_average_loss_weight == 0.0
-    assert (baseline.lora_r, baseline.lora_alpha) == (16, 32)
-    assert baseline.lora_include_mlp is False
+    # G6의 기준 학습 설정
+    assert (baseline.lora_r, baseline.lora_alpha) == (32, 64)
+    assert baseline.lora_include_mlp is True
+    assert baseline.lora_learning_rate == 4e-05
+    assert (baseline.batch_size, baseline.gradient_accumulation) == (32, 1)
+    assert (baseline.max_train_steps, baseline.eval_steps) == (1104, 64)
+    assert baseline.best_checkpoint_metric == "official_matched_rmse"
+
+    ignored = {"dataset_root", "extended_data_dir", "score_head", "mse_loss_weight",
+               "distribution_loss_weight", "organization_pooling", "detail_head_mode",
+               "detail_expected_loss_weight", "detail_rater_set_loss_weight",
+               "listwise_loss", "listwise_loss_weight"}
+    final = dataclasses.asdict(load_config(FINAL))
+    base = dataclasses.asdict(baseline)
+    assert {key for key in final if final[key] != base[key]} <= ignored
 
 
 def test_partial_config_always_inherits_final_defaults(tmp_path: Path) -> None:
@@ -314,40 +313,3 @@ def test_final_preset_pins_every_confirmed_axis() -> None:
     # 제출 후처리
     assert config.score_postprocess == "average_matched"
     assert config.seed == 42
-
-
-def test_expanded_y1_differs_from_original_y1_only_in_lora_defaults() -> None:
-    """보존한 expanded-Y1과 원래 Y1 artifact의 차이는 LoRA 세 축뿐이다.
-
-    run 폴더가 없는 환경(컨테이너, 새 클론)에서는 건너뛴다.
-    """
-
-    resolved_path = (
-        Path(__file__).resolve().parents[1]
-        / "results/new_proposed/ax4light_final_combo_s1288_official_raw_v1"
-        / "y1_f4_rank_metric/ax4_light/5f475fbd3458/resolved_config.json"
-    )
-    if not resolved_path.is_file():
-        pytest.skip(f"y1 run artifact가 없습니다: {resolved_path}")
-
-    preset = dataclasses.asdict(load_config(Y1))
-    # Historical artifacts may contain retired compatibility fields such as the
-    # old project-local model_cache_dir. Compare through the loader so only the
-    # current executable schema is part of the y1 contract.
-    resolved = dataclasses.asdict(load_config(resolved_path))
-    mismatched = sorted(
-        key
-        for key in set(preset) | set(resolved)
-        if _normalize(preset.get(key)) != _normalize(resolved.get(key))
-    )
-    assert mismatched == ["lora_alpha", "lora_include_mlp", "lora_r"]
-    assert (preset["lora_r"], preset["lora_alpha"], preset["lora_include_mlp"]) == (
-        32,
-        64,
-        True,
-    )
-    assert (
-        resolved["lora_r"],
-        resolved["lora_alpha"],
-        resolved["lora_include_mlp"],
-    ) == (16, 32, False)

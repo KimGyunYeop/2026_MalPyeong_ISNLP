@@ -11,16 +11,16 @@ Qwen3.5-9B 백본에 채점 LoRA 8개와 근거 생성 LoRA 1개를 결합한다
 
 시드 42~49의 최종 연속 예측을 등가중 평균한 뒤 **SMR(`average_matched`)**을 한 번 적용한다. 근거 모델은 Gemma4-26B-A4B-it AWQ teacher의 생성 데이터로 학습하며, 추론 시 확정 점수를 유지하면서 근거만 생성한다. 프롬프트는 [rationale_prompt_v4.txt](main_code_relonation/prompts/rationale_prompt_v4.txt)를 사용한다.
 
-| 설정 | 채점 | 근거 생성 |
-| --- | --- | --- |
-| 레시피 | [report_abcd.json](main_code/configs/report_abcd.json) | [r18_report_qwen35.json](main_code_relonation/recipes/r18_report_qwen35.json) |
-| 백본 | Qwen3.5-9B, BF16 | 동일 백본 공유 |
-| LoRA | r32 / alpha64, attention + MLP | r32 / alpha64, q/k/v/o |
-| 학습 데이터 | 11,600편 | 11,600편 |
-| 학습량 | 시드별 1,104 steps | 2 epochs |
-| 배치 × 누적 | 32 × 1 | 2 × 16 |
-| 학습률 | LoRA 4e-5 / 출력층 2e-4 | 4e-5 |
-| 최대 입력 길이 | 4,096 | 8,192 |
+| 설정           | 채점                                                  | 근거 생성                                                                    |
+| -------------- | ----------------------------------------------------- | ---------------------------------------------------------------------------- |
+| 레시피         | [report_abcd.json](main_code/configs/report_abcd.json) | [r18_report_qwen35.json](main_code_relonation/recipes/r18_report_qwen35.json) |
+| 백본           | Qwen3.5-9B, BF16                                      | 동일 백본 공유                                                               |
+| LoRA           | r32 / alpha64, attention + MLP                        | r32 / alpha64, q/k/v/o                                                       |
+| 학습 데이터    | 11,600편                                              | 11,600편                                                                     |
+| 학습량         | 시드별 1,104 steps                                    | 2 epochs                                                                     |
+| 배치 × 누적   | 32 × 1                                               | 2 × 16                                                                      |
+| 학습률         | LoRA 4e-5 / 출력층 2e-4                               | 4e-5                                                                         |
+| 최대 입력 길이 | 4,096                                                 | 8,192                                                                        |
 
 ## Installation
 
@@ -55,7 +55,7 @@ VLLM_PYTHON=/path/to/vllm/bin/python \
 bash scripts/prepare_data.sh generate /path/to/teacher REVISION
 ```
 
-결과는 `main_code_relonation/results/report_rationale_v4/pseudo_train.jsonl`에 저장된다. 생성 완료 후 teacher 서버를 종료하고 학습한다.
+결과는 `main_code_relonation/results/report_rationale_v4/pseudo_train.jsonl`에 저장된다. 파싱·점수 복사·QC에 실패한 근거는 학습에서 제외되며 별도 LLM judge 필터는 쓰지 않는다. 같은 명령을 다시 실행하면 실패한 항목만 재생성한다(성공률 하한은 `MIN_TEACHER_SUCCESS_RATE`, 기본 0.80). 생성 완료 후 teacher 서버를 종료하고 학습한다.
 
 </details>
 

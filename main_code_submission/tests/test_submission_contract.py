@@ -766,40 +766,16 @@ def test_docker_staging_preserves_required_score_postprocess() -> None:
 
 
 def test_release_manifest_and_dockerfile_use_one_fixed_release() -> None:
-    """Historical Y6 계약과 공통 Docker build 경로를 고정한다.
+    """공통 Docker build 경로를 고정한다.
 
     ``submission_assets``는 마지막으로 staging한 release를 가리키므로 여기에서
-    historical Y6와 같다고 가정하지 않는다. 현재 staging 계약은 아래의 별도
+    특정 manifest와 같다고 가정하지 않는다. 현재 staging 계약은 아래의 별도
     테스트가 검증한다.
     """
 
     from pathlib import Path
 
     root = Path(__file__).parents[2]
-    manifest = json.loads(
-        (root / "main_code_submission/manifests/Y6_matched_fallback.json").read_text(
-            encoding="utf-8"
-        )
-    )
-    extra = manifest["extra"]
-    assert manifest["score_postprocess"] == "average_matched"
-    offline = extra["offline_validation"]
-    assert offline["average_matched"] == {
-        "rmse": pytest.approx(0.42231208838961737),
-        "spearman": pytest.approx(0.7500157380037686),
-    }
-    checkpoint_config = json.loads(
-        (
-            Path(extra["source_run"])
-            / extra["checkpoint_selection"]["directory"]
-            / "config.json"
-        ).read_text(encoding="utf-8")
-    )
-    assert checkpoint_config["score_postprocess"] == "average_matched"
-    assert extra["expected_image_tag"] == "y6-cu128-offline-r6-20260811"
-    assert "runtime_base_image" not in extra
-    assert "expected_weights_mode" not in extra
-
     source = (root / "main_code_submission/build_image.sh").read_text(encoding="utf-8")
     assert '"${TAG}" != "${EXPECTED_IMAGE_TAG}"' in source
     assert "WEIGHTS_MODE" not in source

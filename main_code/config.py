@@ -711,8 +711,7 @@ class RegressionConfig:
     # 평균을 쓴다(요소 D, G2-3). 학습되는 스칼라 게이트가 0에서 시작하므로 문단
     # 단서가 없는 글은 shared와 bit-exact하게 같아진다.
     organization_pooling: str = 'paragraph_mean'
-    # 최종 c02는 direct 5-class 확률의 기댓값을 score로 사용한다. 역사적 Y1의
-    # regression head는 configs/confirmed_y1.json에 완전하게 고정한다.
+    # 최종 ABCD는 direct 5-class 확률의 기댓값을 score로 사용한다.
     score_head: str = "distribution"
     # 활성화된 분류 head의 확률을 점수로 바꾸는 방법이다. head 개수(3/9/18)와
     # 무관하게 같은 규칙이 적용된다. 기본 expectation은 기존 동작과 같다.
@@ -1993,7 +1992,7 @@ def _normalize_config_values(value: dict[str, Any]) -> dict[str, Any]:
 
 
 def legacy_baseline_config() -> RegressionConfig:
-    """명시적 ``--baseline``용 완전 고정 pre-y1 대조군을 읽는다."""
+    """명시적 ``--baseline``용 완전 고정 기술서 기준 채점 모델을 읽는다."""
 
     value = _normalize_config_values(_read_config_object(LEGACY_BASELINE_CONFIG_PATH))
     known = {item.name for item in fields(RegressionConfig)}

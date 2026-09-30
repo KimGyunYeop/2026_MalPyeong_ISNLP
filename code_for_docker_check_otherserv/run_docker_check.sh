@@ -15,9 +15,8 @@ IMAGE_MAX_GIB="${IMAGE_MAX_GIB:-60}"
 PULL_WARN_SECONDS="${PULL_WARN_SECONDS:-1800}"
 RESULT_ROOT="${RESULT_ROOT:-${HERE}/results/check_$(date +%Y%m%d_%H%M%S)_$$}"
 DATA_FILE="${DATA_FILE:-${HERE}/data/official_validation_400.jsonl}"
-# 직접 호출하는 기존 Y6 검사는 역사적 oracle을 그대로 쓴다. 새 final release는
-# 확정된 manifest의 HTTP 400편 oracle을 이 환경변수로 반드시 덮어쓴다.
-EXPECTED_PREDICTION_SHA256="${EXPECTED_PREDICTION_SHA256:-47e2aad8cdb64311759e151fa7f12f1e63e5f95d48117a4fdafd50426fe14c72}"
+# 확정된 release manifest의 HTTP 400편 oracle을 이 환경변수로 반드시 지정한다.
+EXPECTED_PREDICTION_SHA256="${EXPECTED_PREDICTION_SHA256:-}"
 
 [[ -n "${IMAGE_REF}" ]] || {
   echo "사용법: PULL=0|1 GPU=all|0 bash run_docker_check.sh IMAGE" >&2

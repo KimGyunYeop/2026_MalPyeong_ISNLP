@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
     # legacy recipe가 조용히 v4로 바뀌지 않는다. 그래서 제출본 고정은 여기서 한다.
     parser.add_argument(
         "--recipe",
-        default="main_code_relonation/recipes/r17_qwen35_lora_fixed_prompt_v4.json",
+        default="main_code_relonation/recipes/r18_report_qwen35.json",
         help="기본값은 최종 제출본 근거모델 레시피(v4 prompt, Qwen3.5-9B LoRA r32)",
     )
     parser.add_argument("--input", required=True)

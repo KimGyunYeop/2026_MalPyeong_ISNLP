@@ -5,7 +5,7 @@
 # 원칙
 #   1. 대회 데이터는 절대 올리지 않는다 (배포 금지 자료).
 #   2. 모델 가중치·체크포인트·이미지 staging은 올리지 않는다 (수백 GB).
-#   3. 실험 산출물(results/)은 올리지 않는다. 요약 문서만 예외로 남긴다.
+#   3. 실험 산출물(results/)과 다른 설정의 실험 기록은 올리지 않는다.
 #   4. 최종 제출본에 쓰이지 않은 실험 트리는 올리지 않는다.
 # =====================================================================
 
@@ -68,13 +68,7 @@ optimizer*.bin
 # ---- 실험 산출물 -------------------------------------------------------
 # 기술서 설정의 채점/근거 학습 출력. 실행 설정 JSON은 별도 경로에 둔다.
 /results/
-# results/ 아래는 전부 제외하고, 방법론 요약 문서만 되살린다.
-main_code/results/**
-!main_code/results/all_results.md
-!main_code/results/remeasured.md
-!main_code/results/new_proposed/
-main_code/results/new_proposed/**
-!main_code/results/new_proposed/results.md
+main_code/results/
 main_code_relonation/results/
 main_code_submission/results/
 code_for_docker_check_otherserv/results/

@@ -35,6 +35,53 @@ BASELINE_RENDER_SHA256 = (
     "9d6324347b778a768762f7145ed08afd363fe0f5585cd5f912b2625a19fce3cd"
 )
 
+# prompt 선언 규약을 검사하는 최소 recipe. 이전 A.X recipe 파일 대신 테스트 안에서 만든다.
+_RECIPE_BASE = {
+    "model_id": "skt/A.X-4.0-Light",
+    "trust_remote_code": True,
+    "torch_dtype": "bfloat16",
+    "max_length": 8192,
+    "temperature": 0.0,
+    "top_p": 1.0,
+    "seed": 42,
+    "score_mode": "fixed",
+    "chat_template_kwargs": {},
+    "lora_dropout": 0.05,
+    "lora_targets": ["q_proj", "k_proj", "v_proj", "o_proj"],
+}
+
+
+def _legacy_recipe(tmp_path: Path) -> RationaleConfig:
+    """prompt를 선언하지 않는 과거 형식 recipe."""
+
+    path = tmp_path / "legacy_recipe.json"
+    path.write_text(
+        json.dumps(
+            {**_RECIPE_BASE, "load_in_4bit": True, "lora_rank": 16, "lora_alpha": 32}
+        ),
+        encoding="utf-8",
+    )
+    return load_config(path)
+
+
+def _v1_recipe(tmp_path: Path) -> RationaleConfig:
+    """rationale_prompt_v1.txt를 명시하는 recipe."""
+
+    path = tmp_path / "v1_recipe.json"
+    path.write_text(
+        json.dumps(
+            {
+                **_RECIPE_BASE,
+                "load_in_4bit": False,
+                "lora_rank": 32,
+                "lora_alpha": 64,
+                "rationale_prompt_file": str(RATIONALE_PROMPT_V1_PATH),
+            }
+        ),
+        encoding="utf-8",
+    )
+    return load_config(path)
+
 
 def test_baseline_file_is_byte_equivalent_to_legacy_render() -> None:
     content = build_messages(
@@ -47,11 +94,9 @@ def test_baseline_file_is_byte_equivalent_to_legacy_render() -> None:
     assert prompt_template_sha256(content) == BASELINE_RENDER_SHA256
 
 
-def test_missing_config_is_baseline_and_next_recipe_is_v1() -> None:
-    legacy = load_config("main_code_relonation/recipes/r11_ax_lora_fixed.json")
-    current = load_config(
-        "main_code_relonation/recipes/r12_ax_lora_fixed_prompt_v1.json"
-    )
+def test_missing_config_is_baseline_and_next_recipe_is_v1(tmp_path: Path) -> None:
+    legacy = _legacy_recipe(tmp_path)
+    current = _v1_recipe(tmp_path)
     assert legacy.rationale_prompt_source == "baseline_fallback"
     assert legacy.rationale_prompt_text == load_prompt_template(BASELINE_PROMPT_PATH)
     assert current.rationale_prompt_id == "rationale_prompt_v1"
@@ -132,9 +177,9 @@ def test_adapter_sidecar_is_authoritative_and_mismatch_fails(tmp_path: Path) -> 
         bind_adapter_prompt(legacy_config, adapter, prompt_was_explicit=True)
 
 
-def test_training_rows_cannot_mix_prompt_versions() -> None:
+def test_training_rows_cannot_mix_prompt_versions(tmp_path: Path) -> None:
     baseline = RationaleConfig(model_id="stub")
-    v1 = load_config("main_code_relonation/recipes/r12_ax_lora_fixed_prompt_v1.json")
+    v1 = _v1_recipe(tmp_path)
     legacy_row = {"essay_id": "old", "pseudo_meta": {}}
     validate_training_prompt_rows([legacy_row], baseline)
     with pytest.raises(ValueError, match="rationale prompt"):
@@ -204,7 +249,7 @@ def test_ab_alignment_and_docker_score_conversion(tmp_path: Path) -> None:
         "a",
     ]
 
-    v1 = load_config("main_code_relonation/recipes/r12_ax_lora_fixed_prompt_v1.json")
+    v1 = _v1_recipe(tmp_path)
     score_contract = validate_training_score_rows(
         read_jsonl(tmp_path / "qwen_aligned.jsonl"), v1
     )
@@ -277,7 +322,7 @@ def test_ab_alignment_rejects_different_fixed_scores(tmp_path: Path) -> None:
         )
 
 
-def test_v1_training_rejects_wrong_average_matched_value() -> None:
+def test_v1_training_rejects_wrong_average_matched_value(tmp_path: Path) -> None:
     row = _accepted("a", "qwen", "a" * 64)
     row["pseudo_meta"]["score_source_values"] = {
         "content": 3.49,
@@ -290,7 +335,7 @@ def test_v1_training_rejects_wrong_average_matched_value() -> None:
         "expression": 3,
     }
     row["pseudo_meta"]["canonical_fixed_scores"] = dict(row["conditioning_scores"])
-    v1 = load_config("main_code_relonation/recipes/r12_ax_lora_fixed_prompt_v1.json")
+    v1 = _v1_recipe(tmp_path)
     with pytest.raises(ValueError, match="재계산값"):
         validate_training_score_rows([row], v1)
 

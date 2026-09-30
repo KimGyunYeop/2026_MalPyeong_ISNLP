@@ -5,7 +5,7 @@
 연구 카탈로그다. `enabled=1`은 다운로드/실험 후보 표시일 뿐 현재 default 또는 submission
 승자를 의미하지 않는다.
 
-현행 score 설정은 [`configs/confirmed_final.json`](../configs/confirmed_final.json), 실제 Docker
-배포 artifact와 pinned base revision은 [`docker_release.sh`](../../docker_release.sh) 및
-``CURRENT_RELEASE_STATUS.md``가 권위다.
+`main_code/config.py`가 import 시 이 TSV를 읽어 model slug를 해석하므로 삭제하지 않는다.
+현행 score 설정은 [`configs/report_abcd.json`](../configs/report_abcd.json), 실제 Docker
+배포 artifact와 pinned base revision은 [`docker_release.sh`](../../docker_release.sh)가 기준이다.
 카탈로그의 `main` revision을 그대로 byte-exact 재현 계약으로 사용하지 않는다.

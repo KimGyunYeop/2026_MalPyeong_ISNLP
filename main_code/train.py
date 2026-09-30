@@ -96,7 +96,7 @@ def parse_args() -> argparse.Namespace:
     config_source.add_argument(
         "--baseline",
         action="store_true",
-        help="2026-08-10 이전 frozen legacy baseline config 사용",
+        help="기술서 기준 채점 모델 config(configs/baseline.json) 사용",
     )
     parser.add_argument(
         "--model", default=None, help="registry alias 또는 등록된 Hugging Face model ID"

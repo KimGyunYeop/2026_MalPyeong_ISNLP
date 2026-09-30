@@ -8,9 +8,8 @@ batch 2 × 누적 16, 학습률 4e-5, 2 epoch, warmup 0.05 설정이다.
 | 파일 | 용도 |
 |---|---|
 | r18_report_qwen35.json | 기술서 기준 Qwen/v4 실행, 백본 revision 고정 |
-| r17_qwen35_lora_fixed_prompt_v4.json | 같은 Qwen/v4 설정, revision main |
-| r16_qwen35_lora_fixed_prompt_v3.json | 과거 Qwen/v3 실험 |
-| r11~r15 | 과거 A.X 실험 |
+
+`main_code_relonation.train`과 `infer`의 `--recipe` 기본값도 r18이다.
 
 상대 rationale_prompt_file은 recipe 파일 위치 기준으로 해석한다.
 학습된 어댑터의 prompt 원문·ID·SHA-256 sidecar는 추론에서도 동일하게 사용한다.

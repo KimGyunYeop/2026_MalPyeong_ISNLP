@@ -25,4 +25,3 @@ teacher/generate에는 TEACHER_MODEL, TEACHER_MODEL_REVISION, RATIONALE_PROMPT_F
 judge/verify는 별도 평가 작업이므로 이번 설정 정리에서는 실행하지 않는다.
 
 현재 Python의 epoch 계산에서는 11,600편·2 epoch가 726 step이다(기술서 725).
-이전 A.X 레시피와 프롬프트는 역사 실험용으로 보존한다.

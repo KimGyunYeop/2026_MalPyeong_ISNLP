@@ -10,10 +10,9 @@ Prompt와 chat-template hash는 실제 어댑터 sidecar에서 읽는다.
 생성 매니페스트는 실행 산출물이므로 Git에서 제외하며, 빈 템플릿을 별도로 올리지 않는다.
 
 build_image.sh는 source asset을 image에 복사하고 /opt/submission 기준의 staged manifest를 만든다.
-과거 Y6_matched_fallback.json은 A.X 모델의 역사 기록이다. 현재 Qwen 모델에 연결하지 않는다.
 성능 평가와 배포는 별도 작업이다.
 
 기술서와 현재 구현 사이의 step·warmup, 손실 수식, sampling 재시도 및
-teacher/prompt 차이는 루트 [README](../../README.md)에 정리되어 있다.
+teacher/prompt 차이는 docker_release.sh의 report_differences에 기록된다.
 상단 max_tokens=512는 API 요청 형식 값이며, 실제 근거 생성 상한은
 rationale.max_new_tokens=2048이다.
